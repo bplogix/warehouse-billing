@@ -1,7 +1,11 @@
-import { Badge } from '@/components/UI/badge'
-import { Button } from '@/components/UI/button'
-import { Card, CardContent } from '@/components/UI/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/UI/alert'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/feedback/alert'
+import { Badge } from '@/components/ui/display/badge'
+import { Button } from '@/components/ui/form-controls/button'
+import { Card, CardContent } from '@/components/ui/display/card'
 import type { FC } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -24,7 +28,12 @@ const roles: Role[] = [
     name: '保税',
     description: '保税仓库管理员',
     icon: '🏢',
-    permissions: ['bonded.view', 'bonded.manage', 'inventory.view', 'report.bonded'],
+    permissions: [
+      'bonded.view',
+      'bonded.manage',
+      'inventory.view',
+      'report.bonded',
+    ],
     accentClass: 'border-primary/50 text-primary hover:border-primary',
   },
   {
@@ -53,7 +62,8 @@ const roles: Role[] = [
       'document.manage',
       'report.customs',
     ],
-    accentClass: 'border-emerald-400/60 text-emerald-500 hover:border-emerald-500',
+    accentClass:
+      'border-emerald-400/60 text-emerald-500 hover:border-emerald-500',
   },
 ]
 
@@ -91,14 +101,17 @@ const AuthDev: FC = () => {
     navigate('/')
   }
 
-  const isRoleLoading = (roleId: string) => isLoading && selectedRole?.id === roleId
+  const isRoleLoading = (roleId: string) =>
+    isLoading && selectedRole?.id === roleId
 
   return (
     <div className="flex min-h-screen items-center bg-background px-4 py-10">
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">开发环境登录</h1>
-          <p className="text-sm text-muted-foreground">选择一个角色进行模拟登录</p>
+          <p className="text-sm text-muted-foreground">
+            选择一个角色进行模拟登录
+          </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -111,11 +124,15 @@ const AuthDev: FC = () => {
                 <span className="text-5xl leading-none">{role.icon}</span>
                 <div className="text-center space-y-1">
                   <p className="text-lg font-semibold">{role.name}</p>
-                  <p className="text-sm text-muted-foreground">{role.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {role.description}
+                  </p>
                 </div>
 
                 <div className="w-full space-y-1 text-center">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">权限范围</p>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    权限范围
+                  </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {role.permissions.slice(0, 3).map((permission) => (
                       <Badge key={permission} variant="outline">
@@ -123,7 +140,9 @@ const AuthDev: FC = () => {
                       </Badge>
                     ))}
                     {role.permissions.length > 3 && (
-                      <Badge variant="outline">+{role.permissions.length - 3}</Badge>
+                      <Badge variant="outline">
+                        +{role.permissions.length - 3}
+                      </Badge>
                     )}
                   </div>
                 </div>

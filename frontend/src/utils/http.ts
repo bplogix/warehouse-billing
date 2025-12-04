@@ -1,8 +1,10 @@
-import axios, { AxiosError, AxiosResponse } from 'axios'
+import axios, { type AxiosError, type AxiosResponse } from 'axios'
+import { toast } from 'sonner'
 
+import type { ApiResponse } from '@/types/common'
 import { ApiError } from '../constants/error'
-import { notify } from '../stores/useNotification'
-import { ApiResponse } from '../types/api'
+
+
 
 // 创建 axios 实例
 const http = axios.create({
@@ -23,7 +25,7 @@ http.interceptors.response.use(
     if (res.success === false) {
       const errorMessage = res.message || 'リクエストが失敗しました'
       // 显示错误通知
-      notify.error(errorMessage)
+      toast.error(errorMessage)
       throw new ApiError(res.errorCode || 500, errorMessage)
     }
     return response
@@ -45,9 +47,9 @@ http.interceptors.response.use(
     }
 
     // 显示错误通知
-    notify.error(errorMessage)
+    toast.error(errorMessage)
     throw new ApiError(errorCode, errorMessage)
-  }
+  },
 )
 
 export default http

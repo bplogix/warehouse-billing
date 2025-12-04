@@ -1,20 +1,17 @@
 import type { RouteObject } from 'react-router-dom'
 import { createBrowserRouter } from 'react-router-dom'
 
-import Dashboard from '@/modules/dashboard/Default'
-import CustomerPage from '@/modules/customer'
 import BillingModule from '@/modules/billing'
-import WarehouseModule from '@/modules/warehouse'
+import CustomerPage from '@/modules/customer'
+import Dashboard from '@/modules/dashboard/Default'
 import LedgerModule from '@/modules/ledger'
+import WarehouseModule from '@/modules/warehouse'
 import NotFound from '@/views/NotFound'
 
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Desktop from '@/components/layouts/Desktop'
 import DevLogin from '@/modules/auth/Dev'
-// import Charge from '@/pages/charge/Index'
-// import Customers from '@/pages/customer/Index'
-// import Invoice from '@/pages/invoice/Index'
-// import Warehouse from '@/pages/warehouse/Index'
+import DemoPage from '@/modules/demo/Default'
 
 export const routeConfig: RouteObject[] = [
   {
@@ -35,6 +32,10 @@ export const routeConfig: RouteObject[] = [
         element: <Dashboard />,
       },
       {
+        path: 'demo',
+        element: <DemoPage />,
+      },
+      {
         path: 'customer',
         element: <CustomerPage />,
       },
@@ -50,18 +51,6 @@ export const routeConfig: RouteObject[] = [
         path: 'ledger',
         element: <LedgerModule />,
       },
-      // {
-      //   path: 'charge',
-      //   element: <Charge />,
-      // },
-      // {
-      //   path: 'warehouse',
-      //   element: <Warehouse />,
-      // },
-      // {
-      //   path: 'invoice',
-      //   element: <Invoice />,
-      // },
     ],
   },
 ]

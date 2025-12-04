@@ -1,5 +1,3 @@
-'use client'
-
 import type { ComponentRef } from 'react'
 import { type DialogProps } from '@radix-ui/react-dialog'
 import { Command as CommandPrimitive } from 'cmdk'

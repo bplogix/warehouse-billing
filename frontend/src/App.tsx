@@ -1,13 +1,13 @@
-// import ConfirmDialog from './components/ConfirmDialog'
-import { ToastProvider } from './components/UI/toastContext'
+import { Toaster } from 'sonner'
+
 import AppRouter from './router'
 
 function App() {
   return (
-    <ToastProvider>
+    <>
       <AppRouter />
-      {/* <ConfirmDialog /> */}
-    </ToastProvider>
+      <Toaster position="top-center" richColors />
+    </>
   )
 }
 
