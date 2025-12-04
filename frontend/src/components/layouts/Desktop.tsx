@@ -1,6 +1,10 @@
-import { Button } from '@/components/UI/button'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/UI/drawer'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/data-entry/button'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+} from '@/components/ui/overlay/drawer'
+import { cn } from '@/utils/utils'
 import {
   Boxes,
   Building2,
@@ -42,7 +46,8 @@ const DesktopLayout = () => {
           const isActive =
             item.path === '/'
               ? location.pathname === '/'
-              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+              : location.pathname === item.path ||
+                location.pathname.startsWith(`${item.path}/`)
           return (
             <button
               key={item.path}
@@ -53,7 +58,8 @@ const DesktopLayout = () => {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
                 'hover:bg-accent hover:text-accent-foreground',
-                isActive && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+                isActive &&
+                  'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -83,18 +89,29 @@ const DesktopLayout = () => {
             <div className="lg:hidden">
               <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
                 <DrawerTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={handleDrawerToggle} aria-label="打开导航">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleDrawerToggle}
+                    aria-label="打开导航"
+                  >
                     <Menu className="h-5 w-5" />
                   </Button>
                 </DrawerTrigger>
                 <DrawerContent className="h-[80vh]">
-                  <div className="mx-auto w-full max-w-[260px] pt-3">{drawer}</div>
+                  <div className="mx-auto w-full max-w-[260px] pt-3">
+                    {drawer}
+                  </div>
                 </DrawerContent>
               </Drawer>
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">仓储计费管理后台</span>
-              <span className="text-xs text-muted-foreground">Warehouse Billing Console</span>
+              <span className="text-sm font-semibold leading-tight">
+                仓储计费管理后台
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Warehouse Billing Console
+              </span>
             </div>
           </div>
         </header>
