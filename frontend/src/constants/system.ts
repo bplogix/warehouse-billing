@@ -25,7 +25,7 @@ export const menus = [
     icon: Users2,
   },
   {
-    path: '/charge',
+    path: '/billing',
     label: '计费管理',
     icon: BadgePercent,
   },
@@ -35,7 +35,7 @@ export const menus = [
     icon: Warehouse,
   },
   {
-    path: '/invoice',
+    path: '/ledger',
     label: '财务对账',
     icon: CircleDollarSign,
   },

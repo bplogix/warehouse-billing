@@ -42,9 +42,9 @@ const Dashboard = () => {
           const descriptions: Record<string, string> = {
             '/': '快速了解业务概况，查看重要指标',
             '/customer': '查看客户信息，维护联系人与结算方式',
-            '/charge': '配置计费方案，按需生成报价',
+            '/billing': '配置计费方案，按需生成报价',
             '/warehouse': '管理库存状态与入库任务',
-            '/invoice': '生成财务报表，掌握应收应付',
+            '/ledger': '生成财务报表，掌握应收应付',
           }
           return (
           <Card
