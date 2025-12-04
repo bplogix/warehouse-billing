@@ -1,6 +1,7 @@
 import * as LabelPrimitive from '@radix-ui/react-label'
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
+import type { ForwardRefElement } from '@/types/react'
 import {
   Controller,
   FormProvider,
@@ -9,7 +10,7 @@ import {
   type FieldValues,
 } from 'react-hook-form'
 
-import { Label } from '@/components/ui/data-entry/label'
+import { Label } from '@/components/ui/form-controls/label'
 import { cn } from '@/utils/utils'
 
 import { FormFieldContext, FormItemContext, useFormField } from './form-context'
@@ -44,7 +45,7 @@ const FormItem = React.forwardRef<
 FormItem.displayName = 'FormItem'
 
 const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
+  ForwardRefElement<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField()
@@ -61,7 +62,7 @@ const FormLabel = React.forwardRef<
 FormLabel.displayName = 'FormLabel'
 
 const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
+  ForwardRefElement<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()

@@ -3,7 +3,7 @@ import * as React from 'react'
 
 import { cn } from '@/utils/utils'
 
-import { badgeVariants } from './badge-constants'
+import { badgeVariants } from './badge-styles'
 
 export interface BadgeProps
   extends
