@@ -1,26 +1,36 @@
-import { Badge } from '@/components/UI/badge'
-import { Button } from '@/components/UI/button'
+import { Badge } from '@/components/ui/display/badge'
+import { Card } from '@/components/ui/display/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/UI/dialog'
-import { Input } from '@/components/UI/input'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/display/table'
+import { Button } from '@/components/ui/form-controls/button'
+import { Input } from '@/components/ui/form-controls/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/UI/select'
-import { Card } from '@/components/UI/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
+} from '@/components/ui/form-controls/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/overlay/dialog'
 import { OperationType, SourceType } from '@/constants/common'
-import { useCustomerStore } from '@/stores/useCustomerStore'
-import { useWarehouseStore } from '@/stores/useWarehouseStore'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import type { OperationLog } from '@/schemas/warehouse'
+import {
+  useWarehouseStore,
+  type WarehouseStore,
+} from '@/stores/useWarehouseStore'
 import { Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -81,9 +91,14 @@ const WarehouseModule = () => {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">进出库人工操作</h1>
-          <p className="text-sm text-muted-foreground">按客户记录入库、出库操作</p>
+          <p className="text-sm text-muted-foreground">
+            按客户记录入库、出库操作
+          </p>
         </div>
-        <Button onClick={() => setOpen(true)} className="self-start md:self-auto">
+        <Button
+          onClick={() => setOpen(true)}
+          className="self-start md:self-auto"
+        >
           <Plus className="mr-2 h-4 w-4" />
           新增操作
         </Button>
@@ -94,7 +109,9 @@ const WarehouseModule = () => {
           <div className="flex flex-1 gap-3">
             <Select
               value={filterCustomer === '' ? '' : String(filterCustomer)}
-              onValueChange={(v) => setFilterCustomer(v === '' ? '' : Number(v))}
+              onValueChange={(v) =>
+                setFilterCustomer(v === '' ? '' : Number(v))
+              }
             >
               <SelectTrigger className="w-full sm:max-w-xs">
                 <SelectValue placeholder="全部客户" />
@@ -145,12 +162,22 @@ const WarehouseModule = () => {
                 <TableRow key={log.operationId} className="hover:bg-accent/30">
                   <TableCell>
                     <div className="space-y-1">
-                      <p className="font-semibold">{customerMap.get(log.customerId) || log.customerName}</p>
-                      <p className="text-xs text-muted-foreground">批次 {log.batchCode}</p>
+                      <p className="font-semibold">
+                        {customerMap.get(log.customerId) || log.customerName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        批次 {log.batchCode}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={log.operationType === OperationType.INBOUND ? 'default' : 'outline'}>
+                    <Badge
+                      variant={
+                        log.operationType === OperationType.INBOUND
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
                       {log.operationTypeDisplay}
                     </Badge>
                   </TableCell>
@@ -176,12 +203,18 @@ const WarehouseModule = () => {
             </TableBody>
           </Table>
           {filteredLogs.length === 0 && (
-            <div className="py-6 text-center text-sm text-muted-foreground">暂无记录，可点击“新增操作”录入</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              暂无记录，可点击“新增操作”录入
+            </div>
           )}
         </div>
       </Card>
 
-      <OperationDialog open={open} onClose={() => setOpen(false)} onSubmit={addLog} />
+      <OperationDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onSubmit={addLog}
+      />
     </div>
   )
 }
@@ -189,20 +222,28 @@ const WarehouseModule = () => {
 type OperationDialogProps = {
   open: boolean
   onClose: () => void
-  onSubmit: ReturnType<typeof useWarehouseStore>['addLog']
+  onSubmit: WarehouseStore['addLog']
 }
 
 const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
   const { customers } = useCustomerStore()
-  const { control, handleSubmit, reset } = useForm<OperationFormValues>({ defaultValues })
+  const { control, handleSubmit, reset } = useForm<OperationFormValues>({
+    defaultValues,
+  })
 
   const submitForm = (values: OperationFormValues) => {
     if (values.customerId === '' || values.quantity === '') return
-    const customerName = customers.find((c) => c.id === values.customerId)?.customerName || '未知客户'
+    const customerName =
+      customers.find((c) => c.id === values.customerId)?.customerName ||
+      '未知客户'
     const now = new Date()
     const payload: Omit<
       OperationLog,
-      'operationId' | 'operationTypeDisplay' | 'sourceTypeDisplay' | 'createdAt' | 'updatedAt'
+      | 'operationId'
+      | 'operationTypeDisplay'
+      | 'sourceTypeDisplay'
+      | 'createdAt'
+      | 'updatedAt'
     > = {
       operationType: values.operationType,
       customerId: values.customerId,
@@ -240,7 +281,9 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
                 <label className="text-sm font-medium">客户</label>
                 <Select
                   value={field.value === '' ? '' : String(field.value)}
-                  onValueChange={(v) => field.onChange(v === '' ? '' : Number(v))}
+                  onValueChange={(v) =>
+                    field.onChange(v === '' ? '' : Number(v))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择客户" />
@@ -269,8 +312,12 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={OperationType.INBOUND}>入库</SelectItem>
-                      <SelectItem value={OperationType.OUTBOUND}>出库</SelectItem>
+                      <SelectItem value={OperationType.INBOUND}>
+                        入库
+                      </SelectItem>
+                      <SelectItem value={OperationType.OUTBOUND}>
+                        出库
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -287,7 +334,9 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={SourceType.MANUAL}>手动录入</SelectItem>
+                      <SelectItem value={SourceType.MANUAL}>
+                        手动录入
+                      </SelectItem>
                       <SelectItem value={SourceType.RB}>RB-WMS</SelectItem>
                     </SelectContent>
                   </Select>
@@ -309,12 +358,21 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
             <Controller
               name="quantity"
               control={control}
-              render={({ field }) => <Input type="number" {...field} placeholder="数量" value={field.value ?? ''} />}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  {...field}
+                  placeholder="数量"
+                  value={field.value ?? ''}
+                />
+              )}
             />
             <Controller
               name="operationDate"
               control={control}
-              render={({ field }) => <Input type="date" {...field} placeholder="操作日期" />}
+              render={({ field }) => (
+                <Input type="date" {...field} placeholder="操作日期" />
+              )}
             />
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -338,7 +396,9 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
             <Controller
               name="operationUid"
               control={control}
-              render={({ field }) => <Input {...field} placeholder="操作人ID" />}
+              render={({ field }) => (
+                <Input {...field} placeholder="操作人ID" />
+              )}
             />
           </div>
           <DialogFooter className="pt-1">

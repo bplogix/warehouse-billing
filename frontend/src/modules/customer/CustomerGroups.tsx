@@ -18,13 +18,8 @@ import { ScrollArea } from '@/components/ui/display/scroll-area'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 
 const CustomerGroups = () => {
-  const {
-    customers,
-    groups,
-    addGroup,
-    removeGroup,
-    updateGroupCustomers,
-  } = useCustomerStore()
+  const { customers, groups, addGroup, removeGroup, updateGroupCustomers } =
+    useCustomerStore()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [manageGroupId, setManageGroupId] = useState<number | null>(null)
@@ -141,7 +136,9 @@ const CustomerGroups = () => {
               <div>
                 <h3 className="text-base font-semibold">{group.name}</h3>
                 {group.description && (
-                  <p className="text-xs text-muted-foreground">{group.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {group.description}
+                  </p>
                 )}
               </div>
               <Badge variant="outline">{group.customerIds.length} 客户</Badge>
@@ -182,12 +179,19 @@ const CustomerGroups = () => {
         ))}
       </div>
 
-      <Dialog open={Boolean(manageGroup)} onOpenChange={(isOpen) => !isOpen && closeManageDialog()}>
+      <Dialog
+        open={Boolean(manageGroup)}
+        onOpenChange={(isOpen) => !isOpen && closeManageDialog()}
+      >
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>
               关联客户
-              {manageGroup && <span className="ml-2 text-sm text-muted-foreground">({manageGroup.name})</span>}
+              {manageGroup && (
+                <span className="ml-2 text-sm text-muted-foreground">
+                  ({manageGroup.name})
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -199,7 +203,9 @@ const CustomerGroups = () => {
               {selectedCustomerIds.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedCustomerIds
-                    .map((id) => customers.find((customer) => customer.id === id))
+                    .map((id) =>
+                      customers.find((customer) => customer.id === id),
+                    )
                     .filter(Boolean)
                     .map((customer) => (
                       <span
@@ -229,7 +235,9 @@ const CustomerGroups = () => {
               <ScrollArea className="max-h-72 pr-2">
                 <div className="space-y-2">
                   {filteredCustomers.length === 0 && (
-                    <p className="text-sm text-muted-foreground">暂无匹配客户</p>
+                    <p className="text-sm text-muted-foreground">
+                      暂无匹配客户
+                    </p>
                   )}
                   {filteredCustomers.map((customer) => (
                     <div

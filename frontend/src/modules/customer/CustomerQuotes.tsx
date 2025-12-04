@@ -37,7 +37,9 @@ const CustomerQuotes = () => {
             {quotes.map((quote) => (
               <TableRow key={`${quote.customerId}-${quote.template}`}>
                 <TableCell>
-                  {customerMap.get(quote.customerId) ?? quote.customerName ?? '未知客户'}
+                  {customerMap.get(quote.customerId) ??
+                    quote.customerName ??
+                    '未知客户'}
                 </TableCell>
                 <TableCell>{quote.template}</TableCell>
                 <TableCell>{quote.status}</TableCell>

@@ -42,7 +42,10 @@ const buildCustomer = (payload: CustomerPayload, id?: number): Customer => ({
   rbCompanyId: payload.rbCompanyId,
 })
 
-const buildGroup = (payload: CustomerGroupInput, id?: number): CustomerGroup => ({
+const buildGroup = (
+  payload: CustomerGroupInput,
+  id?: number,
+): CustomerGroup => ({
   id: id ?? Date.now(),
   name: payload.name,
   description: payload.description,
@@ -76,7 +79,9 @@ export const useCustomerStore = create<CustomerStore>()(
           customers: state.customers.filter((item) => item.id !== id),
           groups: state.groups.map((group) => ({
             ...group,
-            customerIds: group.customerIds.filter((customerId) => customerId !== id),
+            customerIds: group.customerIds.filter(
+              (customerId) => customerId !== id,
+            ),
           })),
         })),
       addGroup: (payload) =>

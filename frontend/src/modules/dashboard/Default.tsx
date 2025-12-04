@@ -1,6 +1,6 @@
-import { Card } from '@/components/UI/card'
-import { useNavigate } from 'react-router-dom'
+import { Card } from '@/components/ui/display/card'
 import { menus } from '@/constants/system'
+import { useNavigate } from 'react-router-dom'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -9,7 +9,9 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="rounded-2xl border bg-card px-6 py-6 shadow-sm">
         <p className="text-2xl font-semibold leading-tight">欢迎回来</p>
-        <p className="mt-1 text-sm text-muted-foreground">快速了解业务概况，或直接跳转到常用功能</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          快速了解业务概况，或直接跳转到常用功能
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

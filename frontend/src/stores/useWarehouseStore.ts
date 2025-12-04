@@ -14,9 +14,18 @@ const sourceTypeDisplay: Record<SourceType, string> = {
   [SourceType.RB]: 'RB-WMS',
 }
 
-type WarehouseStore = {
+export type WarehouseStore = {
   logs: OperationLog[]
-  addLog: (payload: Omit<OperationLog, 'operationId' | 'operationTypeDisplay' | 'sourceTypeDisplay' | 'createdAt' | 'updatedAt'>) => void
+  addLog: (
+    payload: Omit<
+      OperationLog,
+      | 'operationId'
+      | 'operationTypeDisplay'
+      | 'sourceTypeDisplay'
+      | 'createdAt'
+      | 'updatedAt'
+    >,
+  ) => void
   deleteLog: (operationId: number) => void
 }
 
@@ -31,7 +40,8 @@ export const useWarehouseStore = create<WarehouseStore>()(
             ...payload,
             operationId: Date.now(),
             operationTypeDisplay: operationTypeDisplay[payload.operationType],
-            sourceTypeDisplay: sourceTypeDisplay[payload.sourceType as SourceType] ?? '手动录入',
+            sourceTypeDisplay:
+              sourceTypeDisplay[payload.sourceType as SourceType] ?? '手动录入',
             createdAt: now,
             updatedAt: now,
           }

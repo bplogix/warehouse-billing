@@ -1,12 +1,24 @@
-import { Badge } from '@/components/UI/badge'
-import { Card } from '@/components/UI/card'
-import { Input } from '@/components/UI/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
+import { Badge } from '@/components/ui/display/badge'
+import { Card } from '@/components/ui/display/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/display/table'
+import { Input } from '@/components/ui/form-controls/input'
 import { OperationType } from '@/constants/common'
-import { ChargeCategory, ChargeCategoryDisplay, PricingMode, TemplateType } from '@/schemas/template'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import type { TemplateRule } from '@/schemas/template'
+import {
+  ChargeCategory,
+  ChargeCategoryDisplay,
+  PricingMode,
+  TemplateType,
+} from '@/schemas/template'
 import { useBillingStore } from '@/stores/useBillingStore'
-import { useCustomerStore } from '@/stores/useCustomerStore'
 import { useWarehouseStore } from '@/stores/useWarehouseStore'
 import { useMemo, useState } from 'react'
 
@@ -36,7 +48,10 @@ const getUnitPrice = (rule: TemplateRule, quantity: number) => {
   return Number(tier?.price) || 0
 }
 
-const matchRuleToOperation = (category: ChargeCategory, operationType: OperationType) => {
+const matchRuleToOperation = (
+  category: ChargeCategory,
+  operationType: OperationType,
+) => {
   switch (category) {
     case ChargeCategory.INBOUND_OUTBOUND:
       return true
@@ -72,7 +87,9 @@ const LedgerModule = () => {
     }
     const specific = templates.find((tpl) => tpl.customerId === customerId)
     if (specific) return specific
-    const globalTemplate = templates.find((tpl) => tpl.templateType === TemplateType.GLOBAL)
+    const globalTemplate = templates.find(
+      (tpl) => tpl.templateType === TemplateType.GLOBAL,
+    )
     if (globalTemplate) return globalTemplate
     return templates[0] ?? null
   }, [customerId, templates])
@@ -81,7 +98,9 @@ const LedgerModule = () => {
     if (!customerId || !currentTemplate) return []
     const customerLogs = logs.filter((log) => log.customerId === customerId)
     return customerLogs.flatMap<LedgerEntry>((log) => {
-      const rules = currentTemplate.rules.filter((rule) => matchRuleToOperation(rule.category, log.operationType))
+      const rules = currentTemplate.rules.filter((rule) =>
+        matchRuleToOperation(rule.category, log.operationType),
+      )
       return rules.map((rule) => {
         const quantity = log.quantity
         const unitPrice = getUnitPrice(rule, quantity)
@@ -101,20 +120,27 @@ const LedgerModule = () => {
     })
   }, [customerId, currentTemplate, logs, customerMap])
 
-  const totalAmount = ledgerEntries.reduce((sum, entry) => sum + entry.amount, 0)
+  const totalAmount = ledgerEntries.reduce(
+    (sum, entry) => sum + entry.amount,
+    0,
+  )
 
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">客户账目流水</h1>
-          <p className="text-sm text-muted-foreground">基于仓储记录与计费模板的计算结果</p>
+          <p className="text-sm text-muted-foreground">
+            基于仓储记录与计费模板的计算结果
+          </p>
         </div>
         <Input
           list="customer-options"
           placeholder="请选择客户"
           value={customerId === '' ? '' : String(customerId)}
-          onChange={(e) => setCustomerId(e.target.value === '' ? '' : Number(e.target.value))}
+          onChange={(e) =>
+            setCustomerId(e.target.value === '' ? '' : Number(e.target.value))
+          }
           className="w-full sm:w-64"
         />
         <datalist id="customer-options">
@@ -127,16 +153,26 @@ const LedgerModule = () => {
       </div>
 
       <Card className="p-4 shadow-sm">
-        {!customerId && <p className="text-sm text-muted-foreground">请选择客户以查看流水。</p>}
-        {customerId && !currentTemplate && <p className="text-sm text-muted-foreground">暂无关联计费模板。</p>}
+        {!customerId && (
+          <p className="text-sm text-muted-foreground">
+            请选择客户以查看流水。
+          </p>
+        )}
+        {customerId && !currentTemplate && (
+          <p className="text-sm text-muted-foreground">暂无关联计费模板。</p>
+        )}
         {customerId && currentTemplate && ledgerEntries.length === 0 && (
-          <p className="text-sm text-muted-foreground">该客户暂无可生成的流水记录。</p>
+          <p className="text-sm text-muted-foreground">
+            该客户暂无可生成的流水记录。
+          </p>
         )}
 
         {customerId && currentTemplate && ledgerEntries.length > 0 && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold">模板：{currentTemplate.templateName}</p>
+              <p className="text-sm font-semibold">
+                模板：{currentTemplate.templateName}
+              </p>
               <Badge variant="outline">共 {ledgerEntries.length} 条</Badge>
               <Badge>合计 ¥{totalAmount.toFixed(2)}</Badge>
             </div>
@@ -160,11 +196,19 @@ const LedgerModule = () => {
                       <TableCell>{entry.batchCode}</TableCell>
                       <TableCell>{entry.chargeName}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{ChargeCategoryDisplay[entry.category]}</Badge>
+                        <Badge variant="outline">
+                          {ChargeCategoryDisplay[entry.category]}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="text-right">{entry.quantity}</TableCell>
-                      <TableCell className="text-right">¥{entry.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">¥{entry.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {entry.quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ¥{entry.unitPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ¥{entry.amount.toFixed(2)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

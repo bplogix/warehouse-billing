@@ -1,10 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/UI/dialog'
+import { Button } from '@/components/ui/form-controls/button'
+import { Checkbox } from '@/components/ui/form-controls/checkbox'
 import {
   Form,
   FormControl,
@@ -12,25 +7,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/UI/form'
-import { Input } from '@/components/UI/input'
-import { Textarea } from '@/components/UI/textarea'
-import { Button } from '@/components/UI/button'
-import { Checkbox } from '@/components/UI/checkbox'
+} from '@/components/ui/form-controls/form'
+import { Input } from '@/components/ui/form-controls/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/UI/select'
-import { Badge } from '@/components/UI/badge'
+} from '@/components/ui/form-controls/select'
+import { Textarea } from '@/components/ui/form-controls/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/overlay/dialog'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
-import { useForm, useFieldArray, Controller, type Control } from 'react-hook-form'
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  type Control,
+} from 'react-hook-form'
 
 import type { ChargeDefinition } from '@/constants/billing'
 import { chargeDefinitions } from '@/constants/billing'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import type { Template } from '@/schemas/template'
 import {
   ChargeCategory,
@@ -42,7 +47,6 @@ import {
   TemplateType,
 } from '@/schemas/template'
 import { useBillingStore } from '@/stores/useBillingStore'
-import { useCustomerStore } from '@/stores/useCustomerStore'
 
 type RuleForm = Template['rules'][number]
 
@@ -78,7 +82,10 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
   const { addTemplate, updateTemplate } = useBillingStore()
   const { customers } = useCustomerStore()
   const form = useForm<TemplateFormValues>({ defaultValues })
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'rules' })
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'rules',
+  })
 
   useEffect(() => {
     if (initialData) {
@@ -168,7 +175,9 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle>{initialData ? '编辑计费模板' : '新增计费模板'}</DialogTitle>
+          <DialogTitle>
+            {initialData ? '编辑计费模板' : '新增计费模板'}
+          </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -214,7 +223,9 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
                     <FormLabel>客户</FormLabel>
                     <Select
                       value={field.value !== null ? String(field.value) : ''}
-                      onValueChange={(val) => field.onChange(val ? Number(val) : null)}
+                      onValueChange={(val) =>
+                        field.onChange(val ? Number(val) : null)
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -223,7 +234,10 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
                       </FormControl>
                       <SelectContent>
                         {customersOptions.map((option) => (
-                          <SelectItem key={option.value} value={String(option.value)}>
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
                             {option.label}
                           </SelectItem>
                         ))}
@@ -306,12 +320,19 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <p className="text-base font-semibold">计费条目</p>
-                <span className="text-xs text-muted-foreground">选择需要配置的费用项</span>
+                <span className="text-xs text-muted-foreground">
+                  选择需要配置的费用项
+                </span>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {Object.entries(groupedCharges).map(([category, items]) => (
-                  <div key={category} className="rounded-lg border bg-muted/30 p-3">
-                    <p className="text-sm font-semibold mb-2">{ChargeCategoryDisplay[category as ChargeCategory]}</p>
+                  <div
+                    key={category}
+                    className="rounded-lg border bg-muted/30 p-3"
+                  >
+                    <p className="text-sm font-semibold mb-2">
+                      {ChargeCategoryDisplay[category as ChargeCategory]}
+                    </p>
                     <div className="space-y-2">
                       {items.map((item) => (
                         <label
@@ -320,12 +341,17 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
                         >
                           <Checkbox
                             checked={selectedCodes.includes(item.code)}
-                            onCheckedChange={() => handleToggleCharge(item.code)}
+                            onCheckedChange={() =>
+                              handleToggleCharge(item.code)
+                            }
                           />
                           <div className="space-y-1">
-                            <p className="text-sm font-medium leading-none">{item.name}</p>
+                            <p className="text-sm font-medium leading-none">
+                              {item.name}
+                            </p>
                             <p className="text-xs text-muted-foreground">
-                              {ChargeChannelDisplay[item.channel]} · {ChargeUnitDisplay[item.unit]}
+                              {ChargeChannelDisplay[item.channel]} ·{' '}
+                              {ChargeUnitDisplay[item.unit]}
                             </p>
                           </div>
                         </label>
@@ -344,12 +370,18 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
 
             <div className="space-y-3">
               {fields.map((field, index) => (
-                <div key={field.id} className="rounded-lg border bg-card/60 p-4 shadow-sm">
+                <div
+                  key={field.id}
+                  className="rounded-lg border bg-card/60 p-4 shadow-sm"
+                >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-base font-semibold">{field.chargeName}</p>
+                      <p className="text-base font-semibold">
+                        {field.chargeName}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {ChargeCategoryDisplay[field.category]} · {ChargeChannelDisplay[field.channel]} ·{' '}
+                        {ChargeCategoryDisplay[field.category]} ·{' '}
+                        {ChargeChannelDisplay[field.channel]} ·{' '}
                         {ChargeUnitDisplay[field.unit]}
                       </p>
                     </div>
@@ -372,33 +404,49 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
                       render={({ field: pricingField }) => (
                         <FormItem className="max-w-xs">
                           <FormLabel>计费模式</FormLabel>
-                          <Select value={pricingField.value} onValueChange={pricingField.onChange}>
+                          <Select
+                            value={pricingField.value}
+                            onValueChange={pricingField.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value={PricingMode.FLAT}>固定单价</SelectItem>
-                              <SelectItem value={PricingMode.TIERED}>阶梯计费</SelectItem>
+                              <SelectItem value={PricingMode.FLAT}>
+                                固定单价
+                              </SelectItem>
+                              <SelectItem value={PricingMode.TIERED}>
+                                阶梯计费
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormItem>
                       )}
                     />
 
-                    {form.watch(`rules.${index}.pricingMode`) === PricingMode.FLAT ? (
+                    {form.watch(`rules.${index}.pricingMode`) ===
+                    PricingMode.FLAT ? (
                       <FormField
                         control={form.control}
                         name={`rules.${index}.price`}
-                        rules={{ min: { value: 0, message: '单价需大于等于0' } }}
+                        rules={{
+                          min: { value: 0, message: '单价需大于等于0' },
+                        }}
                         render={({ field: priceField, fieldState }) => (
                           <FormItem className="max-w-xs">
                             <FormLabel>单价</FormLabel>
                             <FormControl>
-                              <Input type="number" {...priceField} />
+                              <Input
+                                type="number"
+                                {...priceField}
+                                value={priceField.value ?? ''}
+                              />
                             </FormControl>
-                            <FormMessage>{fieldState.error?.message}</FormMessage>
+                            <FormMessage>
+                              {fieldState.error?.message}
+                            </FormMessage>
                           </FormItem>
                         )}
                       />
@@ -444,14 +492,18 @@ const TierEditor = ({ control, index }: TierEditorProps) => {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => append({ minValue: 0, maxValue: null, price: 0, description: '' })}
+          onClick={() =>
+            append({ minValue: 0, maxValue: null, price: 0, description: '' })
+          }
         >
           <Plus className="mr-2 h-4 w-4" />
           添加阶梯
         </Button>
       </div>
 
-      {fields.length === 0 && <p className="text-xs text-muted-foreground">暂无阶梯，请添加</p>}
+      {fields.length === 0 && (
+        <p className="text-xs text-muted-foreground">暂无阶梯，请添加</p>
+      )}
 
       <div className="space-y-3">
         {fields.map((tier, tierIndex) => (
@@ -462,24 +514,49 @@ const TierEditor = ({ control, index }: TierEditorProps) => {
             <Controller
               name={`rules.${index}.tiers.${tierIndex}.minValue`}
               control={control}
-              render={({ field }) => <Input type="number" placeholder="起始值" {...field} value={field.value ?? ''} />}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  placeholder="起始值"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
             />
             <Controller
               name={`rules.${index}.tiers.${tierIndex}.maxValue`}
               control={control}
               render={({ field }) => (
-                <Input type="number" placeholder="结束值(可空)" {...field} value={field.value ?? ''} />
+                <Input
+                  type="number"
+                  placeholder="结束值(可空)"
+                  {...field}
+                  value={field.value ?? ''}
+                />
               )}
             />
             <Controller
               name={`rules.${index}.tiers.${tierIndex}.price`}
               control={control}
-              render={({ field }) => <Input type="number" placeholder="单价" {...field} value={field.value ?? ''} />}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  placeholder="单价"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
             />
             <Controller
               name={`rules.${index}.tiers.${tierIndex}.description`}
               control={control}
-              render={({ field }) => <Input placeholder="说明" {...field} value={field.value ?? ''} />}
+              render={({ field }) => (
+                <Input
+                  placeholder="说明"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
             />
             <Button
               type="button"

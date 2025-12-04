@@ -18,12 +18,42 @@ import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 const navItems = [
-  { label: '仪表盘', path: '/', icon: LayoutDashboard, description: '全局态势、关键指标' },
-  { label: '客户管理', path: '/customer', icon: Users, description: '客户关系 / 价格策略' },
-  { label: '计费配置', path: '/billing', icon: Boxes, description: '模板与规则管理' },
-  { label: '仓储操作', path: '/warehouse', icon: Building2, description: '入库/出库、作业日志' },
-  { label: '账目流水', path: '/ledger', icon: ReceiptText, description: '结算与对账' },
-  { label: '系统设置', path: '/settings', icon: Settings, description: '权限、基础设施' },
+  {
+    label: '仪表盘',
+    path: '/',
+    icon: LayoutDashboard,
+    description: '全局态势、关键指标',
+  },
+  {
+    label: '客户管理',
+    path: '/customer',
+    icon: Users,
+    description: '客户关系 / 价格策略',
+  },
+  {
+    label: '计费配置',
+    path: '/billing',
+    icon: Boxes,
+    description: '模板与规则管理',
+  },
+  {
+    label: '仓储操作',
+    path: '/warehouse',
+    icon: Building2,
+    description: '入库/出库、作业日志',
+  },
+  {
+    label: '账目流水',
+    path: '/ledger',
+    icon: ReceiptText,
+    description: '结算与对账',
+  },
+  {
+    label: '系统设置',
+    path: '/settings',
+    icon: Settings,
+    description: '权限、基础设施',
+  },
 ]
 
 const subNavConfig: Record<
@@ -71,7 +101,7 @@ const DesktopLayout = () => {
 
   const drawer = (
     <div className="flex h-full flex-col">
-      <div className="relative overflow-hidden rounded-b-2xl border-b border-border/70 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-5">
+      <div className="relative overflow-hidden rounded-b-2xl border-b border-border/70 bg-linear-to-br from-primary/15 via-primary/5 to-transparent p-5">
         <div className="space-y-1">
           <p className="text-lg font-semibold tracking-tight">
             Warehouse Billing
@@ -117,9 +147,7 @@ const DesktopLayout = () => {
         </div>
         {secondaryNavItems.length > 0 && (
           <div className="space-y-2 border-t pt-3">
-            <p className="text-xs uppercase text-muted-foreground">
-              二级导航
-            </p>
+            <p className="text-xs uppercase text-muted-foreground">二级导航</p>
             <div className="flex flex-col gap-1">
               {secondaryNavItems.map((item) => {
                 const isSubActive = location.pathname === item.path
@@ -217,21 +245,21 @@ const DesktopLayout = () => {
                 <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
                   <DrawerTrigger asChild>
                     <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleDrawerToggle}
-                    aria-label="打开导航"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[80vh]">
-                  <div className="mx-auto w-full max-w-[260px] pt-3">
-                    {drawer}
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            </div>
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleDrawerToggle}
+                      aria-label="打开导航"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="h-[80vh]">
+                    <div className="mx-auto w-full max-w-[260px] pt-3">
+                      {drawer}
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold leading-tight">
                   仓储计费管理后台

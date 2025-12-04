@@ -4,8 +4,6 @@ import { toast } from 'sonner'
 import type { ApiResponse } from '@/types/common'
 import { ApiError } from '../constants/error'
 
-
-
 // 创建 axios 实例
 const http = axios.create({
   baseURL: 'http://localhost:8000', // 改成你的 API 地址
