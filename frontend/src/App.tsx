@@ -1,5 +1,5 @@
 // import ConfirmDialog from './components/ConfirmDialog'
-import { ToastProvider } from './components/UI/Toast'
+import { ToastProvider } from './components/UI/toastContext'
 import AppRouter from './router'
 
 function App() {

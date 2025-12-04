@@ -1,37 +1,25 @@
+import { Button } from '@/components/UI/button'
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/UI/drawer'
+import { cn } from '@/lib/utils'
 import {
-  AppBar,
-  Box,
-  CssBaseline,
-  Divider,
-  Drawer,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Typography,
-} from '@mui/material'
-import {
-  Dashboard,
-  Group,
-  Inventory2,
-  ReceiptLong,
+  Boxes,
+  Building2,
+  LayoutDashboard,
+  Menu,
+  ReceiptText,
   Settings,
-  Menu as MenuIcon,
-} from '@mui/icons-material'
+  Users,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-const drawerWidth = 260
-
 const navItems = [
-  { label: '仪表盘', path: '/', icon: <Dashboard /> },
-  { label: '客户管理', path: '/customer', icon: <Group /> },
-  { label: '计费配置', path: '/billing', icon: <Inventory2 /> },
-  { label: '仓储操作', path: '/warehouse', icon: <Inventory2 /> },
-  { label: '账目流水', path: '/ledger', icon: <ReceiptLong /> },
-  { label: '系统设置', path: '/settings', icon: <Settings /> },
+  { label: '仪表盘', path: '/', icon: LayoutDashboard },
+  { label: '客户管理', path: '/customer', icon: Users },
+  { label: '计费配置', path: '/billing', icon: Boxes },
+  { label: '仓储操作', path: '/warehouse', icon: Building2 },
+  { label: '账目流水', path: '/ledger', icon: ReceiptText },
+  { label: '系统设置', path: '/settings', icon: Settings },
 ]
 
 const DesktopLayout = () => {
@@ -44,123 +32,78 @@ const DesktopLayout = () => {
   }
 
   const drawer = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight={700}>
-          Warehouse Billing
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          智能仓储计费中心
-        </Typography>
-      </Box>
-      <Divider />
-      <List sx={{ flexGrow: 1 }}>
+    <div className="flex h-full flex-col">
+      <div className="border-b px-4 py-6">
+        <p className="text-lg font-semibold">Warehouse Billing</p>
+        <p className="text-sm text-muted-foreground">智能仓储计费中心</p>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
         {navItems.map((item) => {
           const isActive =
             item.path === '/'
               ? location.pathname === '/'
               : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
           return (
-            <ListItemButton
+            <button
               key={item.path}
-              selected={isActive}
               onClick={() => {
                 navigate(item.path)
                 setMobileOpen(false)
               }}
-              sx={{ borderRadius: 2, mx: 1, my: 0.5 }}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
+                'hover:bg-accent hover:text-accent-foreground',
+                isActive && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+              )}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </button>
           )
         })}
-      </List>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="caption" color="text.secondary">
-          © {new Date().getFullYear()} Warehouse Billing
-        </Typography>
-      </Box>
-    </Box>
+      </div>
+      <div className="border-t px-4 py-4 text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Warehouse Billing
+      </div>
+    </div>
   )
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          boxShadow: 'none',
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-        }}
+    <div className="flex min-h-screen bg-background text-foreground">
+      <aside
+        className="sticky top-0 hidden h-screen w-[260px] border-r bg-card/60 backdrop-blur-sm lg:block"
+        aria-label="sidebar navigation"
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            仓储计费管理后台
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="navigation"
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          open
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, sm: 4 },
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          minHeight: '100vh',
-          bgcolor: 'background.default',
-          mt: 8,
-        }}
-      >
-        <Outlet />
-      </Box>
-    </Box>
+        {drawer}
+      </aside>
+
+      <div className="flex min-h-screen flex-1 flex-col">
+        <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
+          <div className="flex h-14 items-center gap-3 px-4">
+            <div className="lg:hidden">
+              <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
+                <DrawerTrigger asChild>
+                  <Button size="icon" variant="ghost" onClick={handleDrawerToggle} aria-label="打开导航">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="h-[80vh]">
+                  <div className="mx-auto w-full max-w-[260px] pt-3">{drawer}</div>
+                </DrawerContent>
+              </Drawer>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold leading-tight">仓储计费管理后台</span>
+              <span className="text-xs text-muted-foreground">Warehouse Billing Console</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 px-4 py-4 sm:px-6 lg:px-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   )
 }
 

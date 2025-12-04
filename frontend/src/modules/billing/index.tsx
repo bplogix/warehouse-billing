@@ -1,25 +1,13 @@
-import {
-  Box,
-  Button,
-  Chip,
-  IconButton,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
-import { Edit3, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
-
+import { Badge } from '@/components/UI/badge'
+import { Button } from '@/components/UI/button'
+import { Card } from '@/components/UI/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
 import { ChargeCategoryDisplay } from '@/schemas/template'
 import type { Template } from '@/schemas/template'
 import { useBillingStore } from '@/stores/useBillingStore'
 import { useCustomerStore } from '@/stores/useCustomerStore'
+import { Edit3, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import TemplateForm from './components/TemplateForm'
 
@@ -46,73 +34,84 @@ const BillingModule = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2}>
-        <Box>
-          <Typography variant="h4" fontWeight={700}>
-            计费配置
-          </Typography>
-          <Typography color="text.secondary">为不同客户配置专属计费规则</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={openCreate}>
+    <div className="space-y-4 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">计费配置</h1>
+          <p className="text-sm text-muted-foreground">为不同客户配置专属计费规则</p>
+        </div>
+        <Button onClick={openCreate} className="self-start md:self-auto">
+          <Plus className="mr-2 h-4 w-4" />
           新建模板
         </Button>
-      </Stack>
+      </div>
 
-      <Paper sx={{ mt: 4, borderRadius: 3 }}>
-        <TableContainer>
+      <Card className="p-4 shadow-sm">
+        <div className="overflow-hidden rounded-lg border">
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>模板名称</TableCell>
-                <TableCell>客户</TableCell>
-                <TableCell>有效期</TableCell>
-                <TableCell>状态</TableCell>
-                <TableCell>配置费项</TableCell>
-                <TableCell align="right">操作</TableCell>
+                <TableHead>模板名称</TableHead>
+                <TableHead>客户</TableHead>
+                <TableHead>有效期</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>配置费项</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {templates.map((template) => (
-                <TableRow key={template.id} hover>
+                <TableRow key={template.id} className="hover:bg-accent/30">
                   <TableCell>
-                    <Stack spacing={0.5}>
-                      <Typography fontWeight={600}>{template.templateName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {template.templateCode}
-                      </Typography>
-                    </Stack>
+                    <div className="space-y-1">
+                      <p className="font-semibold">{template.templateName}</p>
+                      <p className="text-xs text-muted-foreground">{template.templateCode}</p>
+                    </div>
                   </TableCell>
-                  <TableCell>{template.customerId ? customersMap.get(template.customerId) ?? '未匹配客户' : '-'}</TableCell>
+                  <TableCell>
+                    {template.customerId ? customersMap.get(template.customerId) ?? '未匹配客户' : '-'}
+                  </TableCell>
                   <TableCell>
                     {template.effectiveDate} ~ {template.expireDate || '长期'}
                   </TableCell>
                   <TableCell>{template.status}</TableCell>
                   <TableCell>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <div className="flex flex-wrap gap-2">
                       {template.rules.slice(0, 3).map((rule) => (
-                        <Chip key={rule.chargeCode} size="small" label={ChargeCategoryDisplay[rule.category]} />
+                        <Badge key={rule.chargeCode} variant="outline">
+                          {ChargeCategoryDisplay[rule.category]}
+                        </Badge>
                       ))}
                       {template.rules.length > 3 && (
-                        <Chip size="small" label={`+${template.rules.length - 3}`} />
+                        <Badge variant="outline">+{template.rules.length - 3}</Badge>
                       )}
-                    </Stack>
+                    </div>
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton color="primary" onClick={() => openEdit(template)}>
-                      <Edit3 size={18} />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => removeTemplate(template.id)}>
-                      <Trash2 size={18} />
-                    </IconButton>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(template)} aria-label="编辑">
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => removeTemplate(template.id)}
+                        aria-label="删除"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          {templates.length === 0 && <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>暂无计费模板，请新建</Box>}
-        </TableContainer>
-      </Paper>
+          {templates.length === 0 && (
+            <div className="py-6 text-center text-sm text-muted-foreground">暂无计费模板，请新建</div>
+          )}
+        </div>
+      </Card>
 
       <TemplateForm
         open={open}
@@ -122,7 +121,7 @@ const BillingModule = () => {
           setEditing(null)
         }}
       />
-    </Box>
+    </div>
   )
 }
 

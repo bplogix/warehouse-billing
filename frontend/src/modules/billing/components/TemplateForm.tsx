@@ -1,23 +1,33 @@
 import {
-  Autocomplete,
-  Box,
-  Button,
-  Checkbox,
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  Divider,
-  FormControlLabel,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+} from '@/components/UI/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/UI/form'
+import { Input } from '@/components/UI/input'
+import { Textarea } from '@/components/UI/textarea'
+import { Button } from '@/components/UI/button'
+import { Checkbox } from '@/components/UI/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/UI/select'
+import { Badge } from '@/components/UI/badge'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
-import { Controller, useFieldArray, useForm, type Control } from 'react-hook-form'
+import { useForm, useFieldArray, Controller, type Control } from 'react-hook-form'
 
 import type { ChargeDefinition } from '@/constants/billing'
 import { chargeDefinitions } from '@/constants/billing'
@@ -67,18 +77,12 @@ type TemplateFormProps = {
 const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
   const { addTemplate, updateTemplate } = useBillingStore()
   const { customers } = useCustomerStore()
-  const {
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { isSubmitting },
-  } = useForm<TemplateFormValues>({ defaultValues })
-  const { fields, append, remove } = useFieldArray({ control, name: 'rules' })
+  const form = useForm<TemplateFormValues>({ defaultValues })
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'rules' })
 
   useEffect(() => {
     if (initialData) {
-      reset({
+      form.reset({
         templateName: initialData.templateName,
         templateCode: initialData.templateCode,
         description: initialData.description,
@@ -92,9 +96,9 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
         })),
       })
     } else {
-      reset(defaultValues)
+      form.reset(defaultValues)
     }
-  }, [initialData, reset])
+  }, [initialData, form])
 
   const onSubmit = async (values: TemplateFormValues) => {
     const payload: Omit<Template, 'id'> = {
@@ -143,9 +147,7 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
   const groupedCharges = useMemo(() => {
     return chargeDefinitions.reduce(
       (acc, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = []
-        }
+        if (!acc[item.category]) acc[item.category] = []
         acc[item.category].push(item)
         return acc
       },
@@ -163,186 +165,262 @@ const TemplateForm = ({ open, onClose, initialData }: TemplateFormProps) => {
   )
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>{initialData ? '编辑计费模板' : '新增计费模板'}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} mt={1}>
-          <Stack spacing={2}>
-            <Controller
-              name="templateName"
-              control={control}
-              rules={{ required: '请输入模板名称' }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  label="模板名称"
-                  fullWidth
-                  error={Boolean(fieldState.error)}
-                  helperText={fieldState.error?.message}
-                />
-              )}
-            />
-            <Controller
-              name="templateCode"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} label="模板编码" placeholder="自动生成可留空" fullWidth />
-              )}
-            />
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <Controller
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-5xl">
+        <DialogHeader>
+          <DialogTitle>{initialData ? '编辑计费模板' : '新增计费模板'}</DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="templateName"
+                rules={{ required: '请输入模板名称' }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>模板名称</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="templateCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>模板编码</FormLabel>
+                    <FormControl>
+                      <Input placeholder="自动生成可留空" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
                 name="customerId"
-                control={control}
                 rules={{ required: '请选择客户' }}
-                render={({ field, fieldState }) => (
-                  <Autocomplete
-                    options={customersOptions}
-                    getOptionLabel={(option) => option.label}
-                    value={customersOptions.find((item) => item.value === field.value) ?? null}
-                    onChange={(_, value) => field.onChange(value?.value ?? null)}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="客户"
-                        error={Boolean(fieldState.error)}
-                        helperText={fieldState.error?.message}
-                      />
-                    )}
-                  />
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>客户</FormLabel>
+                    <Select
+                      value={field.value !== null ? String(field.value) : ''}
+                      onValueChange={(val) => field.onChange(val ? Number(val) : null)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择客户" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customersOptions.map((option) => (
+                          <SelectItem key={option.value} value={String(option.value)}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              <Controller
+
+              <FormField
+                control={form.control}
                 name="status"
-                control={control}
                 render={({ field }) => (
-                  <TextField select label="状态" {...field} fullWidth>
-                    {Object.values(TemplateStatus).map((status) => (
-                      <MenuItem key={status} value={status}>
-                        {status}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  <FormItem>
+                    <FormLabel>状态</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择状态" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(TemplateStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            </Stack>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <Controller
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
                 name="effectiveDate"
-                control={control}
                 render={({ field }) => (
-                  <TextField {...field} type="date" label="生效日期" fullWidth InputLabelProps={{ shrink: true }} />
+                  <FormItem>
+                    <FormLabel>生效日期</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              <Controller
+              <FormField
+                control={form.control}
                 name="expireDate"
-                control={control}
                 render={({ field }) => (
-                  <TextField {...field} type="date" label="失效日期" fullWidth InputLabelProps={{ shrink: true }} />
+                  <FormItem>
+                    <FormLabel>失效日期</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            </Stack>
-            <Controller
+            </div>
+
+            <FormField
+              control={form.control}
               name="description"
-              control={control}
               render={({ field }) => (
-                <TextField {...field} multiline minRows={2} label="备注" fullWidth />
+                <FormItem>
+                  <FormLabel>备注</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} rows={2} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-          </Stack>
 
-          <Divider textAlign="left">计费条目</Divider>
-          <Stack spacing={2}>
-            {Object.entries(groupedCharges).map(([category, items]) => (
-              <Box key={category} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-                <Typography fontWeight={600} gutterBottom>
-                  {ChargeCategoryDisplay[category as ChargeCategory]}
-                </Typography>
-                <Stack spacing={1}>
-                  {items.map((item) => (
-                    <FormControlLabel
-                      key={item.code}
-                      control={
-                        <Checkbox
-                          checked={selectedCodes.includes(item.code)}
-                          onChange={() => handleToggleCharge(item.code)}
-                        />
-                      }
-                      label={
-                        <Stack>
-                          <Typography>{item.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {ChargeChannelDisplay[item.channel]} · {ChargeUnitDisplay[item.unit]}
-                          </Typography>
-                        </Stack>
-                      }
-                    />
-                  ))}
-                </Stack>
-              </Box>
-            ))}
-          </Stack>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <p className="text-base font-semibold">计费条目</p>
+                <span className="text-xs text-muted-foreground">选择需要配置的费用项</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {Object.entries(groupedCharges).map(([category, items]) => (
+                  <div key={category} className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-sm font-semibold mb-2">{ChargeCategoryDisplay[category as ChargeCategory]}</p>
+                    <div className="space-y-2">
+                      {items.map((item) => (
+                        <label
+                          key={item.code}
+                          className="flex cursor-pointer items-start gap-3 rounded-md px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <Checkbox
+                            checked={selectedCodes.includes(item.code)}
+                            onCheckedChange={() => handleToggleCharge(item.code)}
+                          />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium leading-none">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {ChargeChannelDisplay[item.channel]} · {ChargeUnitDisplay[item.unit]}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {fields.length === 0 && (
-            <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>请添加需要配置的费用项</Box>
-          )}
+            {fields.length === 0 && (
+              <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                请添加需要配置的费用项
+              </div>
+            )}
 
-          <Stack spacing={2}>
-            {fields.map((field, index) => (
-              <Box key={field.id} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="h6">{field.chargeName}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {ChargeCategoryDisplay[field.category]} · {ChargeChannelDisplay[field.channel]} ·{' '}
-                      {ChargeUnitDisplay[field.unit]}
-                    </Typography>
-                  </Box>
-                  <IconButton onClick={() => remove(index)} color="error">
-                    <Trash2 size={18} />
-                  </IconButton>
-                </Stack>
-                <Stack spacing={2} mt={2}>
-                  <Controller
-                    name={`rules.${index}.pricingMode`}
-                    control={control}
-                    render={({ field: pricingField }) => (
-                      <TextField select label="计费模式" {...pricingField} sx={{ maxWidth: 200 }}>
-                        <MenuItem value={PricingMode.FLAT}>固定单价</MenuItem>
-                        <MenuItem value={PricingMode.TIERED}>阶梯计费</MenuItem>
-                      </TextField>
-                    )}
-                  />
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <div key={field.id} className="rounded-lg border bg-card/60 p-4 shadow-sm">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-base font-semibold">{field.chargeName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ChargeCategoryDisplay[field.category]} · {ChargeChannelDisplay[field.channel]} ·{' '}
+                        {ChargeUnitDisplay[field.unit]}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => remove(index)}
+                      aria-label="移除条目"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                  {watch(`rules.${index}.pricingMode`) === PricingMode.FLAT ? (
-                    <Controller
-                      name={`rules.${index}.price`}
-                      control={control}
-                      rules={{ min: { value: 0, message: '单价需大于等于0' } }}
-                      render={({ field: priceField, fieldState }) => (
-                        <TextField
-                          {...priceField}
-                          type="number"
-                          label="单价"
-                          error={Boolean(fieldState.error)}
-                          helperText={fieldState.error?.message}
-                        />
+                  <div className="mt-3 space-y-3">
+                    <FormField
+                      control={form.control}
+                      name={`rules.${index}.pricingMode`}
+                      render={({ field: pricingField }) => (
+                        <FormItem className="max-w-xs">
+                          <FormLabel>计费模式</FormLabel>
+                          <Select value={pricingField.value} onValueChange={pricingField.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={PricingMode.FLAT}>固定单价</SelectItem>
+                              <SelectItem value={PricingMode.TIERED}>阶梯计费</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
                       )}
                     />
-                  ) : (
-                    <TierEditor control={control} index={index} />
-                  )}
-                </Stack>
-              </Box>
-            ))}
-          </Stack>
-        </Stack>
+
+                    {form.watch(`rules.${index}.pricingMode`) === PricingMode.FLAT ? (
+                      <FormField
+                        control={form.control}
+                        name={`rules.${index}.price`}
+                        rules={{ min: { value: 0, message: '单价需大于等于0' } }}
+                        render={({ field: priceField, fieldState }) => (
+                          <FormItem className="max-w-xs">
+                            <FormLabel>单价</FormLabel>
+                            <FormControl>
+                              <Input type="number" {...priceField} />
+                            </FormControl>
+                            <FormMessage>{fieldState.error?.message}</FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <TierEditor control={form.control} index={index} />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                取消
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? '保存中...' : '保存'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>取消</Button>
-        <Button onClick={handleSubmit(onSubmit)} variant="contained" disabled={isSubmitting}>
-          保存
-        </Button>
-      </DialogActions>
     </Dialog>
   )
 }
@@ -359,63 +437,64 @@ const TierEditor = ({ control, index }: TierEditorProps) => {
   })
 
   return (
-    <Stack spacing={1}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="subtitle2">阶梯设置</Typography>
-        <Button onClick={() => append({ minValue: 0, maxValue: null, price: 0, description: '' })} startIcon={<Plus size={16} />}>
+    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-semibold">阶梯设置</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => append({ minValue: 0, maxValue: null, price: 0, description: '' })}
+        >
+          <Plus className="mr-2 h-4 w-4" />
           添加阶梯
         </Button>
-      </Stack>
-      {fields.length === 0 && <Typography color="text.secondary">暂无阶梯，请添加</Typography>}
-      {fields.map((tier, tierIndex) => (
-        <Stack
-          key={tier.id}
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={1}
-          alignItems={{ md: 'center' }}
-        >
-          <Controller
-            name={`rules.${index}.tiers.${tierIndex}.minValue`}
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} type="number" label="起始值" fullWidth value={field.value ?? ''} />
-            )}
-          />
-          <Controller
-            name={`rules.${index}.tiers.${tierIndex}.maxValue`}
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                type="number"
-                label="结束值(可空)"
-                fullWidth
-                value={field.value ?? ''}
-              />
-            )}
-          />
-          <Controller
-            name={`rules.${index}.tiers.${tierIndex}.price`}
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} type="number" label="单价" fullWidth value={field.value ?? ''} />
-            )}
-          />
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ width: { xs: '100%', md: 'auto' } }}>
+      </div>
+
+      {fields.length === 0 && <p className="text-xs text-muted-foreground">暂无阶梯，请添加</p>}
+
+      <div className="space-y-3">
+        {fields.map((tier, tierIndex) => (
+          <div
+            key={tier.id}
+            className="flex flex-col gap-2 rounded-md border border-dashed border-border/60 p-3 sm:flex-row sm:items-center"
+          >
+            <Controller
+              name={`rules.${index}.tiers.${tierIndex}.minValue`}
+              control={control}
+              render={({ field }) => <Input type="number" placeholder="起始值" {...field} value={field.value ?? ''} />}
+            />
+            <Controller
+              name={`rules.${index}.tiers.${tierIndex}.maxValue`}
+              control={control}
+              render={({ field }) => (
+                <Input type="number" placeholder="结束值(可空)" {...field} value={field.value ?? ''} />
+              )}
+            />
+            <Controller
+              name={`rules.${index}.tiers.${tierIndex}.price`}
+              control={control}
+              render={({ field }) => <Input type="number" placeholder="单价" {...field} value={field.value ?? ''} />}
+            />
             <Controller
               name={`rules.${index}.tiers.${tierIndex}.description`}
               control={control}
-              render={({ field }) => (
-                <TextField {...field} label="说明" fullWidth value={field.value ?? ''} />
-              )}
+              render={({ field }) => <Input placeholder="说明" {...field} value={field.value ?? ''} />}
             />
-            <IconButton onClick={() => remove(tierIndex)} color="error">
-              <Trash2 size={16} />
-            </IconButton>
-          </Stack>
-        </Stack>
-      ))}
-    </Stack>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-destructive"
+              onClick={() => remove(tierIndex)}
+              aria-label="删除阶梯"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

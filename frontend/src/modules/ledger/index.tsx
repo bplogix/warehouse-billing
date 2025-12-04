@@ -1,26 +1,14 @@
-import {
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-  MenuItem,
-} from '@mui/material'
-import { useMemo, useState } from 'react'
-
+import { Badge } from '@/components/UI/badge'
+import { Card } from '@/components/UI/card'
+import { Input } from '@/components/UI/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
+import { OperationType } from '@/constants/common'
 import { ChargeCategory, ChargeCategoryDisplay, PricingMode, TemplateType } from '@/schemas/template'
+import type { TemplateRule } from '@/schemas/template'
 import { useBillingStore } from '@/stores/useBillingStore'
 import { useCustomerStore } from '@/stores/useCustomerStore'
 import { useWarehouseStore } from '@/stores/useWarehouseStore'
-import type { TemplateRule } from '@/schemas/template'
-import { OperationType } from '@/constants/common'
+import { useMemo, useState } from 'react'
 
 type LedgerEntry = {
   id: string
@@ -83,13 +71,9 @@ const LedgerModule = () => {
       return null
     }
     const specific = templates.find((tpl) => tpl.customerId === customerId)
-    if (specific) {
-      return specific
-    }
+    if (specific) return specific
     const globalTemplate = templates.find((tpl) => tpl.templateType === TemplateType.GLOBAL)
-    if (globalTemplate) {
-      return globalTemplate
-    }
+    if (globalTemplate) return globalTemplate
     return templates[0] ?? null
   }, [customerId, templates])
 
@@ -120,78 +104,76 @@ const LedgerModule = () => {
   const totalAmount = ledgerEntries.reduce((sum, entry) => sum + entry.amount, 0)
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2}>
-        <Box>
-          <Typography variant="h4" fontWeight={700}>
-            客户账目流水
-          </Typography>
-          <Typography color="text.secondary">基于仓储记录与计费模板的计算结果</Typography>
-        </Box>
-        <TextField
-          select
-          label="客户"
-          value={customerId}
+    <div className="space-y-4 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">客户账目流水</h1>
+          <p className="text-sm text-muted-foreground">基于仓储记录与计费模板的计算结果</p>
+        </div>
+        <Input
+          list="customer-options"
+          placeholder="请选择客户"
+          value={customerId === '' ? '' : String(customerId)}
           onChange={(e) => setCustomerId(e.target.value === '' ? '' : Number(e.target.value))}
-          sx={{ minWidth: 260 }}
-        >
-          <MenuItem value="">请选择客户</MenuItem>
+          className="w-full sm:w-64"
+        />
+        <datalist id="customer-options">
           {customers.map((customer) => (
-            <MenuItem key={customer.id} value={customer.id}>
+            <option key={customer.id} value={customer.id}>
               {customer.customerName}
-            </MenuItem>
+            </option>
           ))}
-        </TextField>
-      </Stack>
+        </datalist>
+      </div>
 
-      <Paper sx={{ mt: 4, p: 2, borderRadius: 3 }}>
-        {!customerId && <Typography color="text.secondary">请选择客户以查看流水。</Typography>}
-        {customerId && !currentTemplate && <Typography color="text.secondary">暂无关联计费模板。</Typography>}
+      <Card className="p-4 shadow-sm">
+        {!customerId && <p className="text-sm text-muted-foreground">请选择客户以查看流水。</p>}
+        {customerId && !currentTemplate && <p className="text-sm text-muted-foreground">暂无关联计费模板。</p>}
         {customerId && currentTemplate && ledgerEntries.length === 0 && (
-          <Typography color="text.secondary">该客户暂无可生成的流水记录。</Typography>
+          <p className="text-sm text-muted-foreground">该客户暂无可生成的流水记录。</p>
         )}
 
         {customerId && currentTemplate && ledgerEntries.length > 0 && (
-          <>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={2} alignItems={{ md: 'center' }}>
-              <Typography variant="h6">模板：{currentTemplate.templateName}</Typography>
-              <Chip label={`共 ${ledgerEntries.length} 条`} />
-              <Chip color="success" label={`合计 ¥${totalAmount.toFixed(2)}`} />
-            </Stack>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold">模板：{currentTemplate.templateName}</p>
+              <Badge variant="outline">共 {ledgerEntries.length} 条</Badge>
+              <Badge>合计 ¥{totalAmount.toFixed(2)}</Badge>
+            </div>
+            <div className="overflow-hidden rounded-lg border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell>日期</TableCell>
-                    <TableCell>批次</TableCell>
-                    <TableCell>费用项</TableCell>
-                    <TableCell>类别</TableCell>
-                    <TableCell align="right">数量</TableCell>
-                    <TableCell align="right">单价</TableCell>
-                    <TableCell align="right">金额</TableCell>
+                    <TableHead>日期</TableHead>
+                    <TableHead>批次</TableHead>
+                    <TableHead>费用项</TableHead>
+                    <TableHead>类别</TableHead>
+                    <TableHead className="text-right">数量</TableHead>
+                    <TableHead className="text-right">单价</TableHead>
+                    <TableHead className="text-right">金额</TableHead>
                   </TableRow>
-                </TableHead>
+                </TableHeader>
                 <TableBody>
                   {ledgerEntries.map((entry) => (
-                    <TableRow key={entry.id} hover>
+                    <TableRow key={entry.id} className="hover:bg-accent/30">
                       <TableCell>{entry.date}</TableCell>
                       <TableCell>{entry.batchCode}</TableCell>
                       <TableCell>{entry.chargeName}</TableCell>
                       <TableCell>
-                        <Chip label={ChargeCategoryDisplay[entry.category]} size="small" />
+                        <Badge variant="outline">{ChargeCategoryDisplay[entry.category]}</Badge>
                       </TableCell>
-                      <TableCell align="right">{entry.quantity}</TableCell>
-                      <TableCell align="right">¥{entry.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell align="right">¥{entry.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{entry.quantity}</TableCell>
+                      <TableCell className="text-right">¥{entry.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">¥{entry.amount.toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
-          </>
+            </div>
+          </div>
         )}
-      </Paper>
-    </Box>
+      </Card>
+    </div>
   )
 }
 

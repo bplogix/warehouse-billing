@@ -1,25 +1,17 @@
+import { Badge } from '@/components/UI/badge'
+import { Button } from '@/components/UI/button'
 import {
-  Box,
-  Button,
-  Chip,
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  IconButton,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material'
-import { Edit3, Plus, Trash2 } from 'lucide-react'
+} from '@/components/UI/dialog'
+import { Input } from '@/components/UI/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
+import { Card } from '@/components/UI/card'
 import { useMemo, useState } from 'react'
+import { Edit3, Plus, Trash2 } from 'lucide-react'
 
 import type { Customer } from '@/schemas/customer'
 import { useCustomerStore } from '@/stores/useCustomerStore'
@@ -66,82 +58,90 @@ const CustomerPage = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" spacing={2}>
-        <Box>
-          <Typography variant="h4" fontWeight={600}>
-            客户关系
-          </Typography>
-          <Typography color="text.secondary">管理系统客户，快速跳转常用操作</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={handleCreate}>
+    <div className="space-y-4 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">客户关系</h1>
+          <p className="text-sm text-muted-foreground">管理系统客户，快速跳转常用操作</p>
+        </div>
+        <Button onClick={handleCreate} className="self-start md:self-auto">
+          <Plus className="mr-2 h-4 w-4" />
           新增客户
         </Button>
-      </Stack>
+      </div>
 
-      <Paper sx={{ mt: 3, p: 2, borderRadius: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
-          <TextField
+      <Card className="space-y-4 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Input
             placeholder="搜索客户名称 / 编码 / 联系人"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            fullWidth
+            className="sm:max-w-md"
           />
-          <Typography color="text.secondary">共 {filtered.length} 条</Typography>
-        </Stack>
+          <p className="text-sm text-muted-foreground">共 {filtered.length} 条</p>
+        </div>
 
-        <TableContainer sx={{ mt: 3 }}>
+        <div className="overflow-hidden rounded-lg border">
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>客户名称</TableCell>
-                <TableCell>编码</TableCell>
-                <TableCell>联系人</TableCell>
-                <TableCell>邮箱</TableCell>
-                <TableCell>状态</TableCell>
-                <TableCell align="right">操作</TableCell>
+                <TableHead>客户名称</TableHead>
+                <TableHead>编码</TableHead>
+                <TableHead>联系人</TableHead>
+                <TableHead>邮箱</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {filtered.map((customer) => (
-                <TableRow key={customer.id} hover>
+                <TableRow key={customer.id} className="hover:bg-accent/30">
                   <TableCell>
-                    <Stack spacing={0.5}>
-                      <Typography fontWeight={600}>{customer.customerName}</Typography>
+                    <div className="space-y-1">
+                      <p className="font-semibold">{customer.customerName}</p>
                       {customer.rbCompanyId && (
-                        <Typography variant="caption" color="text.secondary">
-                          RB ID: {customer.rbCompanyId}
-                        </Typography>
+                        <p className="text-xs text-muted-foreground">RB ID: {customer.rbCompanyId}</p>
                       )}
-                    </Stack>
+                    </div>
                   </TableCell>
                   <TableCell>{customer.customerCode}</TableCell>
                   <TableCell>{customer.contactPerson}</TableCell>
                   <TableCell>{customer.contactEmail}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={customer.status === 'ACTIVE' ? '启用' : '停用'}
-                      color={customer.status === 'ACTIVE' ? 'success' : 'default'}
-                      size="small"
-                    />
+                    <Badge variant={customer.status === 'ACTIVE' ? 'default' : 'outline'}>
+                      {customer.status === 'ACTIVE' ? '启用' : '停用'}
+                    </Badge>
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton color="primary" onClick={() => handleEdit(customer)}>
-                      <Edit3 size={18} />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDelete(customer)}>
-                      <Trash2 size={18} />
-                    </IconButton>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(customer)}
+                        aria-label="编辑"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => handleDelete(customer)}
+                        aria-label="删除"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
           {filtered.length === 0 && (
-            <Box sx={{ py: 8, textAlign: 'center', color: 'text.secondary' }}>暂无数据</Box>
+            <div className="py-8 text-center text-sm text-muted-foreground">暂无数据</div>
           )}
-        </TableContainer>
-      </Paper>
+        </div>
+      </Card>
 
       <CustomerForm
         open={formOpen}
@@ -159,7 +159,7 @@ const CustomerPage = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
-    </Box>
+    </div>
   )
 }
 
@@ -172,17 +172,21 @@ type DialogConfirmProps = {
 }
 
 const DialogConfirm = ({ open, title, description, onCancel, onConfirm }: DialogConfirmProps) => (
-  <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>{title}</DialogTitle>
-    <DialogContent>
-      <Typography>{description}</Typography>
+  <Dialog open={open} onOpenChange={onCancel}>
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+      </DialogHeader>
+      <p className="text-sm text-muted-foreground">{description}</p>
+      <DialogFooter className="pt-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          取消
+        </Button>
+        <Button type="button" variant="destructive" onClick={onConfirm}>
+          删除
+        </Button>
+      </DialogFooter>
     </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>取消</Button>
-      <Button onClick={onConfirm} color="error" variant="contained">
-        删除
-      </Button>
-    </DialogActions>
   </Dialog>
 )
 

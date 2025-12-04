@@ -1,32 +1,29 @@
+import { Badge } from '@/components/UI/badge'
+import { Button } from '@/components/UI/button'
 import {
-  Box,
-  Button,
-  Chip,
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  IconButton,
-  MenuItem,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material'
-import { Plus, Trash2 } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { Controller, useForm } from 'react-hook-form'
-
+} from '@/components/UI/dialog'
+import { Input } from '@/components/UI/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/UI/select'
+import { Card } from '@/components/UI/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
 import { OperationType, SourceType } from '@/constants/common'
 import { useCustomerStore } from '@/stores/useCustomerStore'
 import { useWarehouseStore } from '@/stores/useWarehouseStore'
 import type { OperationLog } from '@/schemas/warehouse'
+import { Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 
 type OperationFormValues = {
   customerId: number | ''
@@ -80,76 +77,82 @@ const WarehouseModule = () => {
   const handleDelete = (id: number) => deleteLog(id)
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2}>
-        <Box>
-          <Typography variant="h4" fontWeight={700}>
-            进出库人工操作
-          </Typography>
-          <Typography color="text.secondary">按客户记录入库、出库操作</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setOpen(true)}>
+    <div className="space-y-4 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">进出库人工操作</h1>
+          <p className="text-sm text-muted-foreground">按客户记录入库、出库操作</p>
+        </div>
+        <Button onClick={() => setOpen(true)} className="self-start md:self-auto">
+          <Plus className="mr-2 h-4 w-4" />
           新增操作
         </Button>
-      </Stack>
+      </div>
 
-      <Paper sx={{ mt: 4, p: 2, borderRadius: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={2}>
-          <TextField
-            select
-            label="客户"
-            value={filterCustomer}
-            onChange={(e) => setFilterCustomer(e.target.value === '' ? '' : Number(e.target.value))}
-            sx={{ minWidth: 200 }}
-          >
-            <MenuItem value="">全部客户</MenuItem>
-            {customers.map((customer) => (
-              <MenuItem key={customer.id} value={customer.id}>
-                {customer.customerName}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="操作类型"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as OperationType | '')}
-            sx={{ minWidth: 160 }}
-          >
-            <MenuItem value="">全部类型</MenuItem>
-            <MenuItem value={OperationType.INBOUND}>入库</MenuItem>
-            <MenuItem value={OperationType.OUTBOUND}>出库</MenuItem>
-          </TextField>
-        </Stack>
+      <Card className="space-y-3 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-1 gap-3">
+            <Select
+              value={filterCustomer === '' ? '' : String(filterCustomer)}
+              onValueChange={(v) => setFilterCustomer(v === '' ? '' : Number(v))}
+            >
+              <SelectTrigger className="w-full sm:max-w-xs">
+                <SelectValue placeholder="全部客户" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">全部客户</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={String(customer.id)}>
+                    {customer.customerName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <TableContainer>
+            <Select
+              value={filterType}
+              onValueChange={(v) => setFilterType(v as OperationType | '')}
+            >
+              <SelectTrigger className="w-full sm:max-w-[180px]">
+                <SelectValue placeholder="全部类型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">全部类型</SelectItem>
+                <SelectItem value={OperationType.INBOUND}>入库</SelectItem>
+                <SelectItem value={OperationType.OUTBOUND}>出库</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border">
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>客户</TableCell>
-                <TableCell>类型</TableCell>
-                <TableCell>批次号</TableCell>
-                <TableCell>SKU 类型</TableCell>
-                <TableCell>数量</TableCell>
-                <TableCell>体积</TableCell>
-                <TableCell>重量</TableCell>
-                <TableCell>日期</TableCell>
-                <TableCell align="right">操作</TableCell>
+                <TableHead>客户</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>批次号</TableHead>
+                <TableHead>SKU 类型</TableHead>
+                <TableHead>数量</TableHead>
+                <TableHead>体积</TableHead>
+                <TableHead>重量</TableHead>
+                <TableHead>日期</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {filteredLogs.map((log) => (
-                <TableRow key={log.operationId} hover>
+                <TableRow key={log.operationId} className="hover:bg-accent/30">
                   <TableCell>
-                    <Stack spacing={0.5}>
-                      <Typography fontWeight={600}>{customerMap.get(log.customerId) || log.customerName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        批次 {log.batchCode}
-                      </Typography>
-                    </Stack>
+                    <div className="space-y-1">
+                      <p className="font-semibold">{customerMap.get(log.customerId) || log.customerName}</p>
+                      <p className="text-xs text-muted-foreground">批次 {log.batchCode}</p>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Chip label={log.operationTypeDisplay} color={log.operationType === OperationType.INBOUND ? 'success' : 'warning'} size="small" />
+                    <Badge variant={log.operationType === OperationType.INBOUND ? 'default' : 'outline'}>
+                      {log.operationTypeDisplay}
+                    </Badge>
                   </TableCell>
                   <TableCell>{log.batchCode}</TableCell>
                   <TableCell>{log.skuType}</TableCell>
@@ -157,23 +160,29 @@ const WarehouseModule = () => {
                   <TableCell>{log.totalVolume}</TableCell>
                   <TableCell>{log.totalWeight}</TableCell>
                   <TableCell>{log.operationDate}</TableCell>
-                  <TableCell align="right">
-                    <IconButton color="error" onClick={() => handleDelete(log.operationId)}>
-                      <Trash2 size={18} />
-                    </IconButton>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => handleDelete(log.operationId)}
+                      aria-label="删除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
           {filteredLogs.length === 0 && (
-            <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>暂无记录，可点击“新增操作”录入</Box>
+            <div className="py-6 text-center text-sm text-muted-foreground">暂无记录，可点击“新增操作”录入</div>
           )}
-        </TableContainer>
-      </Paper>
+        </div>
+      </Card>
 
       <OperationDialog open={open} onClose={() => setOpen(false)} onSubmit={addLog} />
-    </Box>
+    </div>
   )
 }
 
@@ -191,7 +200,10 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
     if (values.customerId === '' || values.quantity === '') return
     const customerName = customers.find((c) => c.id === values.customerId)?.customerName || '未知客户'
     const now = new Date()
-    const payload: Omit<OperationLog, 'operationId' | 'operationTypeDisplay' | 'sourceTypeDisplay' | 'createdAt' | 'updatedAt'> = {
+    const payload: Omit<
+      OperationLog,
+      'operationId' | 'operationTypeDisplay' | 'sourceTypeDisplay' | 'createdAt' | 'updatedAt'
+    > = {
       operationType: values.operationType,
       customerId: values.customerId,
       customerName,
@@ -213,110 +225,130 @@ const OperationDialog = ({ open, onClose, onSubmit }: OperationDialogProps) => {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>新增进出库操作</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} mt={1}>
+    <Dialog open={open} onOpenChange={(openState) => !openState && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>新增进出库操作</DialogTitle>
+        </DialogHeader>
+        <form className="space-y-3" onSubmit={handleSubmit(submitForm)}>
           <Controller
             name="customerId"
             control={control}
             rules={{ required: true }}
             render={({ field }) => (
-              <TextField
-                select
-                label="客户"
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-              >
-                <MenuItem value="">选择客户</MenuItem>
-                {customers.map((customer) => (
-                  <MenuItem key={customer.id} value={customer.id}>
-                    {customer.customerName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">客户</label>
+                <Select
+                  value={field.value === '' ? '' : String(field.value)}
+                  onValueChange={(v) => field.onChange(v === '' ? '' : Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择客户" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">选择客户</SelectItem>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={String(customer.id)}>
+                        {customer.customerName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           />
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <div className="grid gap-3 md:grid-cols-2">
             <Controller
               name="operationType"
               control={control}
               render={({ field }) => (
-                <TextField select label="操作类型" {...field}>
-                  <MenuItem value={OperationType.INBOUND}>入库</MenuItem>
-                  <MenuItem value={OperationType.OUTBOUND}>出库</MenuItem>
-                </TextField>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">操作类型</label>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={OperationType.INBOUND}>入库</SelectItem>
+                      <SelectItem value={OperationType.OUTBOUND}>出库</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             />
             <Controller
               name="sourceType"
               control={control}
               render={({ field }) => (
-                <TextField select label="来源" {...field}>
-                  <MenuItem value={SourceType.MANUAL}>手动录入</MenuItem>
-                  <MenuItem value={SourceType.RB}>RB-WMS</MenuItem>
-                </TextField>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">来源</label>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SourceType.MANUAL}>手动录入</SelectItem>
+                      <SelectItem value={SourceType.RB}>RB-WMS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             />
-          </Stack>
+          </div>
           <Controller
             name="batchCode"
             control={control}
-            render={({ field }) => <TextField {...field} label="批次号" fullWidth />}
+            render={({ field }) => <Input {...field} placeholder="批次号" />}
           />
           <Controller
             name="skuType"
             control={control}
-            render={({ field }) => <TextField {...field} label="SKU 类型" fullWidth />}
+            render={({ field }) => <Input {...field} placeholder="SKU 类型" />}
           />
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <div className="grid gap-3 md:grid-cols-2">
             <Controller
               name="quantity"
               control={control}
-              render={({ field }) => (
-                <TextField {...field} type="number" label="数量" fullWidth value={field.value ?? ''} />
-              )}
+              render={({ field }) => <Input type="number" {...field} placeholder="数量" value={field.value ?? ''} />}
             />
             <Controller
               name="operationDate"
               control={control}
-              render={({ field }) => (
-                <TextField {...field} type="date" label="操作日期" fullWidth InputLabelProps={{ shrink: true }} />
-              )}
+              render={({ field }) => <Input type="date" {...field} placeholder="操作日期" />}
             />
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
             <Controller
               name="totalVolume"
               control={control}
-              render={({ field }) => <TextField {...field} label="总体积" fullWidth />}
+              render={({ field }) => <Input {...field} placeholder="总体积" />}
             />
             <Controller
               name="totalWeight"
               control={control}
-              render={({ field }) => <TextField {...field} label="总重量" fullWidth />}
+              render={({ field }) => <Input {...field} placeholder="总重量" />}
             />
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
             <Controller
               name="operationName"
               control={control}
-              render={({ field }) => <TextField {...field} label="操作人" fullWidth />}
+              render={({ field }) => <Input {...field} placeholder="操作人" />}
             />
             <Controller
               name="operationUid"
               control={control}
-              render={({ field }) => <TextField {...field} label="操作人ID" fullWidth />}
+              render={({ field }) => <Input {...field} placeholder="操作人ID" />}
             />
-          </Stack>
-        </Stack>
+          </div>
+          <DialogFooter className="pt-1">
+            <Button type="button" variant="outline" onClick={onClose}>
+              取消
+            </Button>
+            <Button type="submit">保存</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>取消</Button>
-        <Button onClick={handleSubmit(submitForm)} variant="contained">
-          保存
-        </Button>
-      </DialogActions>
     </Dialog>
   )
 }

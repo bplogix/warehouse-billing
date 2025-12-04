@@ -1,42 +1,18 @@
-import { Avatar, Box, Card, CardActionArea, CardContent, Typography } from '@mui/material'
-import { alpha, useTheme } from '@mui/material/styles'
+import { Card } from '@/components/UI/card'
 import { useNavigate } from 'react-router-dom'
 import { menus } from '@/constants/system'
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const theme = useTheme()
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Box
-        sx={{
-          borderRadius: 2,
-          bgcolor: 'background.paper',
-          p: 4,
-          mb: 4,
-          boxShadow: (theme) => theme.shadows[1],
-        }}
-      >
-        <Typography variant="h4" fontWeight={600}>
-          欢迎回来
-        </Typography>
-        <Typography color="text.secondary" mt={1}>
-          快速了解业务概况，或直接跳转到常用功能
-        </Typography>
-      </Box>
+    <div className="space-y-6">
+      <div className="rounded-2xl border bg-card px-6 py-6 shadow-sm">
+        <p className="text-2xl font-semibold leading-tight">欢迎回来</p>
+        <p className="mt-1 text-sm text-muted-foreground">快速了解业务概况，或直接跳转到常用功能</p>
+      </div>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: 'repeat(1, minmax(0, 1fr))',
-            sm: 'repeat(2, minmax(0, 1fr))',
-            md: 'repeat(4, minmax(0, 1fr))',
-          },
-        }}
-      >
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {menus.map((menu) => {
           const Icon = menu.icon
           const descriptions: Record<string, string> = {
@@ -47,48 +23,27 @@ const Dashboard = () => {
             '/ledger': '生成财务报表，掌握应收应付',
           }
           return (
-          <Card
-            key={menu.path}
-            elevation={1}
-            sx={{
-              borderRadius: 3,
-              bgcolor: 'background.paper',
-              height: '100%',
-            }}
-          >
-            <CardActionArea
-              sx={{
-                height: '100%',
-                p: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: 2,
-              }}
+            <Card
+              key={menu.path}
+              className="group h-full cursor-pointer border border-border/70 p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               onClick={() => navigate(menu.path)}
             >
-              <Avatar
-                sx={{
-                  bgcolor: alpha(theme.palette.primary.main, 0.15),
-                  width: 56,
-                  height: 56,
-                  color: theme.palette.primary.main,
-                }}
-              >
-                <Icon size={28} />
-              </Avatar>
-              <CardContent sx={{ p: 0 }}>
-                <Typography variant="h6">{menu.label}</Typography>
-                <Typography color="text.secondary" variant="body2" mt={1}>
-                  {descriptions[menu.path] || menu.label}
-                </Typography>
-              </CardContent>
-            </CardActionArea>
-          </Card>
+              <div className="flex h-full flex-col items-start gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icon className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="space-y-1 text-left">
+                  <p className="text-base font-semibold">{menu.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {descriptions[menu.path] || menu.label}
+                  </p>
+                </div>
+              </div>
+            </Card>
           )
         })}
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }
 

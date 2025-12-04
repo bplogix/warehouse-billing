@@ -1,18 +1,7 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Container,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
-import type { ButtonProps } from '@mui/material/Button'
+import { Badge } from '@/components/UI/badge'
+import { Button } from '@/components/UI/button'
+import { Card, CardContent } from '@/components/UI/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/UI/alert'
 import type { FC } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -26,7 +15,7 @@ interface Role {
   description: string
   icon: string
   permissions: string[]
-  color: NonNullable<ButtonProps['color']>
+  accentClass: string
 }
 
 const roles: Role[] = [
@@ -35,13 +24,8 @@ const roles: Role[] = [
     name: '保税',
     description: '保税仓库管理员',
     icon: '🏢',
-    permissions: [
-      'bonded.view',
-      'bonded.manage',
-      'inventory.view',
-      'report.bonded',
-    ],
-    color: 'primary',
+    permissions: ['bonded.view', 'bonded.manage', 'inventory.view', 'report.bonded'],
+    accentClass: 'border-primary/50 text-primary hover:border-primary',
   },
   {
     id: 'warehouse',
@@ -55,7 +39,7 @@ const roles: Role[] = [
       'inventory.manage',
       'report.warehouse',
     ],
-    color: 'secondary',
+    accentClass: 'border-secondary/50 text-secondary hover:border-secondary',
   },
   {
     id: 'customs',
@@ -69,7 +53,7 @@ const roles: Role[] = [
       'document.manage',
       'report.customs',
     ],
-    color: 'success',
+    accentClass: 'border-emerald-400/60 text-emerald-500 hover:border-emerald-500',
   },
 ]
 
@@ -107,132 +91,78 @@ const AuthDev: FC = () => {
     navigate('/')
   }
 
-  const isRoleLoading = (roleId: string) =>
-    isLoading && selectedRole?.id === roleId
+  const isRoleLoading = (roleId: string) => isLoading && selectedRole?.id === roleId
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        bgcolor: 'background.default',
-        display: 'flex',
-        alignItems: 'center',
-        py: 6,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 3 }}>
-          <Stack spacing={1} textAlign="center" mb={6}>
-            <Typography variant="h4" fontWeight={700}>
-              开发环境登录
-            </Typography>
-            <Typography color="text.secondary">
-              选择一个角色进行模拟登录
-            </Typography>
-          </Stack>
+    <div className="flex min-h-screen items-center bg-background px-4 py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold">开发环境登录</h1>
+          <p className="text-sm text-muted-foreground">选择一个角色进行模拟登录</p>
+        </div>
 
-          <Box
-            sx={{
-              display: 'grid',
-              gap: 3,
-              gridTemplateColumns: {
-                xs: 'repeat(1, minmax(0, 1fr))',
-                md: 'repeat(3, minmax(0, 1fr))',
-              },
-            }}
-          >
-            {roles.map((role) => (
-              <Card
-                key={role.id}
-                variant="outlined"
-                sx={{
-                  height: '100%',
-                  borderRadius: 3,
-                  borderColor: 'divider',
-                  '&:hover': {
-                    borderColor: `${role.color}.main`,
-                    boxShadow: 3,
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                <CardContent>
-                  <Stack spacing={2} alignItems="center" textAlign="center">
-                    <Box component="span" sx={{ fontSize: 48 }}>
-                      {role.icon}
-                    </Box>
-                    <Typography variant="h6">{role.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {role.description}
-                    </Typography>
+        <div className="grid gap-4 md:grid-cols-3">
+          {roles.map((role) => (
+            <Card
+              key={role.id}
+              className="group h-full border-border/70 transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <CardContent className="flex h-full flex-col items-center gap-3 p-6">
+                <span className="text-5xl leading-none">{role.icon}</span>
+                <div className="text-center space-y-1">
+                  <p className="text-lg font-semibold">{role.name}</p>
+                  <p className="text-sm text-muted-foreground">{role.description}</p>
+                </div>
 
-                    <Box sx={{ width: '100%' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        权限范围：
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        flexWrap="wrap"
-                        justifyContent="center"
-                        mt={1}
-                      >
-                        {role.permissions.slice(0, 3).map((permission) => (
-                          <Chip
-                            key={permission}
-                            label={permission.split('.')[0]}
-                            size="small"
-                            variant="outlined"
-                          />
-                        ))}
-                        {role.permissions.length > 3 && (
-                          <Chip
-                            label={`+${role.permissions.length - 3}`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </Stack>
-                    </Box>
+                <div className="w-full space-y-1 text-center">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">权限范围</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {role.permissions.slice(0, 3).map((permission) => (
+                      <Badge key={permission} variant="outline">
+                        {permission.split('.')[0]}
+                      </Badge>
+                    ))}
+                    {role.permissions.length > 3 && (
+                      <Badge variant="outline">+{role.permissions.length - 3}</Badge>
+                    )}
+                  </div>
+                </div>
 
-                    <Button
-                      variant="contained"
-                      color={role.color}
-                      fullWidth
-                      disabled={isLoading}
-                      onClick={() => handleLogin(role)}
-                      sx={{ height: 44 }}
-                    >
-                      {isRoleLoading(role.id) ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : (
-                        `登录为${role.name}`
-                      )}
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
+                <Button
+                  className={`mt-auto w-full ${role.accentClass}`}
+                  disabled={isLoading}
+                  onClick={() => handleLogin(role)}
+                >
+                  {isRoleLoading(role.id) ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/60 border-t-transparent" />
+                      正在登录...
+                    </span>
+                  ) : (
+                    `登录为${role.name}`
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          <Divider sx={{ my: 4 }}>或</Divider>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="h-px flex-1 bg-border" />
+          <span>或</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
 
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            <Stack spacing={1}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                开发环境说明
-              </Typography>
-              <Typography variant="body2">
-                • 这是开发环境的模拟登录，无需真实密码
-                <br />
-                • 不同角色拥有不同的系统权限
-                <br />• 登录状态会保持到浏览器缓存中
-              </Typography>
-            </Stack>
-          </Alert>
-        </Paper>
-      </Container>
-    </Box>
+        <Alert className="border-primary/30 bg-primary/5">
+          <AlertTitle>开发环境说明</AlertTitle>
+          <AlertDescription className="space-y-1 text-sm">
+            <p>• 这是开发环境的模拟登录，无需真实密码</p>
+            <p>• 不同角色拥有不同的系统权限</p>
+            <p>• 登录状态会保持到浏览器缓存中</p>
+          </AlertDescription>
+        </Alert>
+      </div>
+    </div>
   )
 }
 
