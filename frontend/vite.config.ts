@@ -10,6 +10,9 @@ export default defineConfig(() => {
   return {
     base,
     plugins: [react(), tailwindcss()],
+    server: {
+      port: 3000,
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
