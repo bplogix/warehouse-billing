@@ -1,26 +1,35 @@
-import { Badge } from '@/components/UI/badge'
-import { Button } from '@/components/UI/button'
+import { Badge } from '@/components/ui/display/badge'
+import { Card } from '@/components/ui/display/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/display/table'
+import { Button } from '@/components/ui/form-controls/button'
+import { Input } from '@/components/ui/form-controls/input'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/UI/dialog'
-import { Input } from '@/components/UI/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/UI/table'
-import { Card } from '@/components/UI/card'
-import { useMemo, useState } from 'react'
+} from '@/components/ui/overlay/dialog'
 import { Edit3, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import type { Customer } from '@/schemas/customer'
-import { useCustomerStore } from '@/stores/useCustomerStore'
+import type { Customer } from '@/modules/customer/schemas/customer'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 
 import CustomerForm from './components/CustomerForm'
 
 const CustomerPage = () => {
   const { customers, deleteCustomer } = useCustomerStore()
-  const [formOpen, setFormOpen] = useState(false)
+  const navigate = useNavigate()
+  const [editOpen, setEditOpen] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
   const [keyword, setKeyword] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
@@ -36,14 +45,9 @@ const CustomerPage = () => {
     )
   }, [customers, keyword])
 
-  const handleCreate = () => {
-    setEditing(null)
-    setFormOpen(true)
-  }
-
   const handleEdit = (customer: Customer) => {
     setEditing(customer)
-    setFormOpen(true)
+    setEditOpen(true)
   }
 
   const handleDelete = (customer: Customer) => {
@@ -62,9 +66,14 @@ const CustomerPage = () => {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">客户关系</h1>
-          <p className="text-sm text-muted-foreground">管理系统客户，快速跳转常用操作</p>
+          <p className="text-sm text-muted-foreground">
+            管理系统客户，快速跳转常用操作
+          </p>
         </div>
-        <Button onClick={handleCreate} className="self-start md:self-auto">
+        <Button
+          onClick={() => navigate('/customer/create')}
+          className="self-start md:self-auto"
+        >
           <Plus className="mr-2 h-4 w-4" />
           新增客户
         </Button>
@@ -78,7 +87,9 @@ const CustomerPage = () => {
             onChange={(e) => setKeyword(e.target.value)}
             className="sm:max-w-md"
           />
-          <p className="text-sm text-muted-foreground">共 {filtered.length} 条</p>
+          <p className="text-sm text-muted-foreground">
+            共 {filtered.length} 条
+          </p>
         </div>
 
         <div className="overflow-hidden rounded-lg border">
@@ -100,7 +111,9 @@ const CustomerPage = () => {
                     <div className="space-y-1">
                       <p className="font-semibold">{customer.customerName}</p>
                       {customer.rbCompanyId && (
-                        <p className="text-xs text-muted-foreground">RB ID: {customer.rbCompanyId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          RB ID: {customer.rbCompanyId}
+                        </p>
                       )}
                     </div>
                   </TableCell>
@@ -108,7 +121,11 @@ const CustomerPage = () => {
                   <TableCell>{customer.contactPerson}</TableCell>
                   <TableCell>{customer.contactEmail}</TableCell>
                   <TableCell>
-                    <Badge variant={customer.status === 'ACTIVE' ? 'default' : 'outline'}>
+                    <Badge
+                      variant={
+                        customer.status === 'ACTIVE' ? 'default' : 'outline'
+                      }
+                    >
                       {customer.status === 'ACTIVE' ? '启用' : '停用'}
                     </Badge>
                   </TableCell>
@@ -138,15 +155,17 @@ const CustomerPage = () => {
             </TableBody>
           </Table>
           {filtered.length === 0 && (
-            <div className="py-8 text-center text-sm text-muted-foreground">暂无数据</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              暂无数据
+            </div>
           )}
         </div>
       </Card>
 
       <CustomerForm
-        open={formOpen}
+        open={editOpen}
         onClose={() => {
-          setFormOpen(false)
+          setEditOpen(false)
           setEditing(null)
         }}
         initialData={editing}
@@ -171,7 +190,13 @@ type DialogConfirmProps = {
   onConfirm: () => void
 }
 
-const DialogConfirm = ({ open, title, description, onCancel, onConfirm }: DialogConfirmProps) => (
+const DialogConfirm = ({
+  open,
+  title,
+  description,
+  onCancel,
+  onConfirm,
+}: DialogConfirmProps) => (
   <Dialog open={open} onOpenChange={onCancel}>
     <DialogContent className="max-w-md">
       <DialogHeader>

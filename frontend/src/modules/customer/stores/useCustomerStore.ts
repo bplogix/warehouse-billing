@@ -1,56 +1,33 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
-import type { Company, CreateCustomer, Customer } from '@/schemas/customer'
+import type {
+  Company,
+  CreateCustomer,
+  Customer,
+  CustomerGroup,
+  CustomerGroupInput,
+  CustomerQuote,
+} from '@/modules/customer/schemas/customer'
+import { mockCompanies } from '@/modules/customer/mocks/companies'
+import { mockCustomerGroups } from '@/modules/customer/mocks/groups'
+import { mockCustomers } from '@/modules/customer/mocks/customers'
+import { mockCustomerQuotes } from '@/modules/customer/mocks/quotes'
 
 type CustomerPayload = CreateCustomer & { status: string }
 
 type CustomerStore = {
   customers: Customer[]
+  groups: CustomerGroup[]
+  quotes: CustomerQuote[]
   addCustomer: (payload: CustomerPayload) => void
   updateCustomer: (id: number, payload: CustomerPayload) => void
   deleteCustomer: (id: number) => void
+  addGroup: (payload: { name: string; description?: string }) => void
+  removeGroup: (id: number) => void
+  updateGroupCustomers: (id: number, customerIds: number[]) => void
   searchCompanies: (keyword: string) => Promise<Company[]>
 }
-
-const mockCompanies: Company[] = [
-  {
-    companyId: 'rb-1001',
-    companyName: 'RB 国际物流有限公司',
-    companyCode: 'RB-GLOBAL',
-    companyCorporation: '张伟',
-    companyPhone: '021-88886666',
-    companyEmail: 'contact@rb-global.com',
-    companyAddress: '上海市浦东新区世纪大道88号',
-  },
-  {
-    companyId: 'rb-1002',
-    companyName: '蓝海跨境科技',
-    companyCode: 'BLUE-OCEAN',
-    companyCorporation: '李娜',
-    companyPhone: '010-55667788',
-    companyEmail: 'hello@blueocean.com',
-    companyAddress: '北京市朝阳区建国路111号',
-  },
-  {
-    companyId: 'rb-1003',
-    companyName: '恒星仓储服务',
-    companyCode: 'STAR-WARE',
-    companyCorporation: '王勇',
-    companyPhone: '0755-88997766',
-    companyEmail: 'service@starware.com',
-    companyAddress: '深圳市南山区科技园一路15号',
-  },
-  {
-    companyId: 'rb-1004',
-    companyName: '峰巅供应链',
-    companyCode: 'PEAK-CHAIN',
-    companyCorporation: '陈晨',
-    companyPhone: '020-66778899',
-    companyEmail: 'info@peakchain.com',
-    companyAddress: '广州市天河区珠江新城88号',
-  },
-]
 
 const buildCustomer = (payload: CustomerPayload, id?: number): Customer => ({
   id: id ?? Date.now(),
@@ -65,10 +42,25 @@ const buildCustomer = (payload: CustomerPayload, id?: number): Customer => ({
   rbCompanyId: payload.rbCompanyId,
 })
 
+const buildGroup = (payload: CustomerGroupInput, id?: number): CustomerGroup => ({
+  id: id ?? Date.now(),
+  name: payload.name,
+  description: payload.description,
+  customerIds: payload.customerIds ?? [],
+})
+
 export const useCustomerStore = create<CustomerStore>()(
   persist(
-    (set, get) => ({
-      customers: [],
+    (set) => ({
+      customers: mockCustomers,
+      quotes: mockCustomerQuotes,
+      groups: mockCustomerGroups.map((group) =>
+        buildGroup({
+          name: group.name,
+          description: group.description,
+          customerIds: [],
+        }),
+      ),
       addCustomer: (payload) =>
         set((state) => ({
           customers: [...state.customers, buildCustomer(payload)],
@@ -82,6 +74,24 @@ export const useCustomerStore = create<CustomerStore>()(
       deleteCustomer: (id) =>
         set((state) => ({
           customers: state.customers.filter((item) => item.id !== id),
+          groups: state.groups.map((group) => ({
+            ...group,
+            customerIds: group.customerIds.filter((customerId) => customerId !== id),
+          })),
+        })),
+      addGroup: (payload) =>
+        set((state) => ({
+          groups: [buildGroup(payload), ...state.groups],
+        })),
+      removeGroup: (id) =>
+        set((state) => ({
+          groups: state.groups.filter((group) => group.id !== id),
+        })),
+      updateGroupCustomers: (id, customerIds) =>
+        set((state) => ({
+          groups: state.groups.map((group) =>
+            group.id === id ? { ...group, customerIds } : group,
+          ),
         })),
       searchCompanies: async (keyword: string) => {
         const normalized = keyword.trim().toLowerCase()

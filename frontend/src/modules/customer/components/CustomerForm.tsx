@@ -1,10 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/UI/dialog'
+import { Badge } from '@/components/ui/display/badge'
+import { Button } from '@/components/ui/form-controls/button'
 import {
   Form,
   FormControl,
@@ -12,18 +7,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/UI/form'
-import { Input } from '@/components/UI/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/UI/select'
-import { Textarea } from '@/components/UI/textarea'
-import { Button } from '@/components/UI/button'
-import { Badge } from '@/components/UI/badge'
+} from '@/components/ui/form-controls/form'
+import { Input } from '@/components/ui/form-controls/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/form-controls/select'
+import { Textarea } from '@/components/ui/form-controls/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/overlay/dialog'
 import type { FC } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 
-import type { Company, Customer } from '@/schemas/customer'
-import { useCustomerStore } from '@/stores/useCustomerStore'
+import type { Company, Customer } from '@/modules/customer/schemas/customer'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 
 type CustomerFormValues = {
   customerName: string
@@ -56,7 +62,11 @@ const statusOptions = [
   { value: 'INACTIVE', label: '停用' },
 ]
 
-const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => {
+const CustomerForm: FC<CustomerFormProps> = ({
+  open,
+  onClose,
+  initialData,
+}) => {
   const { addCustomer, updateCustomer, searchCompanies } = useCustomerStore()
   const form = useForm<CustomerFormValues>({ defaultValues })
   const [options, setOptions] = useState<Company[]>([])
@@ -100,7 +110,10 @@ const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => 
     form.setValue('rbCompanyId', company.companyId)
   }
 
-  const dialogTitle = useMemo(() => (initialData ? '编辑客户' : '新增客户'), [initialData])
+  const dialogTitle = useMemo(
+    () => (initialData ? '编辑客户' : '新增客户'),
+    [initialData],
+  )
 
   useEffect(() => {
     if (open) {
@@ -129,7 +142,9 @@ const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => 
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">RB 公司库</p>
-                <p className="text-xs text-muted-foreground">输入公司名称或编码搜索，点击条目自动填充表单</p>
+                <p className="text-xs text-muted-foreground">
+                  输入公司名称或编码搜索，点击条目自动填充表单
+                </p>
               </div>
               {companyLoading && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -145,7 +160,9 @@ const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => 
                 onChange={(e) => handleSearch(e.target.value)}
               />
               <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/60 p-2 text-sm">
-                {options.length === 0 && <p className="text-muted-foreground">暂无匹配结果</p>}
+                {options.length === 0 && (
+                  <p className="text-muted-foreground">暂无匹配结果</p>
+                )}
                 {options.map((option) => (
                   <button
                     key={option.companyId}
@@ -156,7 +173,9 @@ const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => 
                       <span>{option.companyName}</span>
                       <Badge variant="outline">{option.companyCode}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{option.companyAddress}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      {option.companyAddress}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -246,7 +265,10 @@ const CustomerForm: FC<CustomerFormProps> = ({ open, onClose, initialData }) => 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>状态</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="请选择状态" />
