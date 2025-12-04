@@ -1,10 +1,10 @@
 import js from '@eslint/js'
-import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from 'globals'
 import { fileURLToPath } from 'node:url'
+import tseslint from 'typescript-eslint'
 
 const tsconfigRootDir = fileURLToPath(new URL('.', import.meta.url))
 
@@ -28,7 +28,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['vite.config.{ts,mts,cts}'],
+    files: ['vite.config.{ts,mts,cts}', 'tailwind.config.{ts}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
