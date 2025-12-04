@@ -28,7 +28,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['vite.config.{ts,mts,cts}', 'tailwind.config.{ts,mts,cts}'],
+    files: ['vite.config.{ts,mts,cts}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
