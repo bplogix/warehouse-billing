@@ -49,7 +49,12 @@ export const routeConfig: RouteObject[] = [
       },
       {
         path: 'billing',
-        element: <BillingModule />,
+        children: [
+          { index: true, element: <BillingModule /> },
+          { path: 'general', element: <BillingModule /> },
+          { path: 'group', element: <BillingModule /> },
+          { path: 'custom', element: <BillingModule /> },
+        ],
       },
       {
         path: 'warehouse',

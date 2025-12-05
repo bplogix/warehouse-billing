@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
-import type { Template } from '@/schemas/template'
+import { mockTemplates } from '@/modules/billing/mocks/templates'
+import type { Template } from '@/modules/billing/schemas/template'
 
 type BillingStore = {
   templates: Template[]
@@ -13,7 +14,7 @@ type BillingStore = {
 export const useBillingStore = create<BillingStore>()(
   persist(
     (set) => ({
-      templates: [],
+      templates: mockTemplates,
       addTemplate: (template) =>
         set((state) => ({
           templates: [...state.templates, { ...template, id: Date.now() }],

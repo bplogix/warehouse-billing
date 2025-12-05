@@ -26,8 +26,7 @@ const CustomerQuotes = () => {
     if (!normalized) return quotes
     return quotes.filter((quote) => {
       const customer = customerMap.get(quote.customerId)
-      const name =
-        customer?.name ?? quote.customerName ?? 'unknown-customer'
+      const name = customer?.name ?? quote.customerName ?? 'unknown-customer'
       const code = customer?.code ?? ''
       return (
         name.toLowerCase().includes(normalized) ||
@@ -76,9 +75,7 @@ const CustomerQuotes = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
                       <p className="text-lg font-semibold">
-                        {customer?.name ??
-                          quote.customerName ??
-                          '未知客户'}
+                        {customer?.name ?? quote.customerName ?? '未知客户'}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                         <span>模板：{quote.template}</span>

@@ -61,6 +61,23 @@ const subNavConfig: Record<
   string,
   Array<{ label: string; description?: string; path: string }>
 > = {
+  '/billing': [
+    {
+      label: '通用规则',
+      description: '基础计费策略，适用于全局',
+      path: '/billing/general',
+    },
+    {
+      label: '群组规则',
+      description: '针对客户群组的差异化计费',
+      path: '/billing/group',
+    },
+    {
+      label: '专属规则',
+      description: '单一客户独享的专属方案',
+      path: '/billing/custom',
+    },
+  ],
   '/customer': [
     {
       label: '添加客户',
@@ -92,10 +109,7 @@ const DesktopLayout = () => {
   const activePrimary =
     navItems.find((item) => {
       if (item.path === '/') return location.pathname === '/'
-      return (
-        location.pathname === item.path ||
-        location.pathname.startsWith(`${item.path}/`)
-      )
+      return location.pathname.startsWith(item.path)
     }) ?? navItems[0]
 
   const secondaryNavItems = subNavConfig[activePrimary.path] ?? []
@@ -206,7 +220,8 @@ const DesktopLayout = () => {
           <div className="flex flex-1 flex-col gap-2 p-4">
             {secondaryNavItems.length > 0 ? (
               secondaryNavItems.map((item) => {
-                const isActive = location.pathname === item.path
+                const itemPathname = item.path.split('?')[0]
+                const isActive = location.pathname === itemPathname
                 return (
                   <button
                     key={item.path}

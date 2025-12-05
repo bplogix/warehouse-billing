@@ -1,4 +1,8 @@
-import { ChargeCategory, ChargeChannel, ChargeUnit } from '@/schemas/template'
+import {
+  ChargeCategory,
+  ChargeChannel,
+  ChargeUnit,
+} from '@/modules/billing/schemas/template'
 
 export type ChargeDefinition = {
   code: string
