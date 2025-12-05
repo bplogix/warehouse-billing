@@ -1,3 +1,4 @@
+import logo from '@/assets/images/logo.png'
 import { Button } from '@/components/ui/form-controls/button'
 import {
   Drawer,
@@ -260,13 +261,20 @@ const DesktopLayout = () => {
                   </DrawerContent>
                 </Drawer>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold leading-tight">
-                  仓储计费管理后台
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Warehouse Billing Console
-                </span>
+              <div className="flex items-center gap-3">
+                <img
+                  src={logo}
+                  alt="Warehouse Billing"
+                  className="h-9 w-9 rounded-md bg-white object-contain"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold leading-tight">
+                    仓储财务管理后台
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Warehouse Billing Console
+                  </span>
+                </div>
               </div>
             </div>
             <nav className="hidden items-center gap-2 lg:flex">
