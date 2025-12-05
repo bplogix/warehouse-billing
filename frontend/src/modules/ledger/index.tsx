@@ -10,15 +10,15 @@ import {
 } from '@/components/ui/display/table'
 import { Input } from '@/components/ui/form-controls/input'
 import { OperationType } from '@/constants/common'
-import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
-import type { TemplateRule } from '@/schemas/template'
+import type { TemplateRule } from '@/modules/billing/schemas/template'
 import {
   ChargeCategory,
   ChargeCategoryDisplay,
   PricingMode,
   TemplateType,
-} from '@/schemas/template'
-import { useBillingStore } from '@/stores/useBillingStore'
+} from '@/modules/billing/schemas/template'
+import { useBillingStore } from '@/modules/billing/stores/useBillingStore'
+import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import { useWarehouseStore } from '@/stores/useWarehouseStore'
 import { useMemo, useState } from 'react'
 
