@@ -1,14 +1,3 @@
-import { Badge } from '@/components/ui/display/badge'
-import { Card } from '@/components/ui/display/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/display/table'
-import { Button } from '@/components/ui/form-controls/button'
 import { Input } from '@/components/ui/form-controls/input'
 import {
   Dialog,
@@ -17,13 +6,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/overlay/dialog'
-import { Edit3, Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { Customer } from '@/modules/customer/schemas/customer'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 
+import { Button } from '@/components/ui/form-controls/button'
+import CustomerCard from './components/CustomerCard'
 import CustomerForm from './components/CustomerForm'
 
 const CustomerPage = () => {
@@ -79,7 +70,7 @@ const CustomerPage = () => {
         </Button>
       </div>
 
-      <Card className="space-y-4 p-4 shadow-sm">
+      <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Input
             placeholder="搜索客户名称 / 编码 / 联系人"
@@ -92,75 +83,22 @@ const CustomerPage = () => {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>客户名称</TableHead>
-                <TableHead>编码</TableHead>
-                <TableHead>联系人</TableHead>
-                <TableHead>邮箱</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((customer) => (
-                <TableRow key={customer.id} className="hover:bg-accent/30">
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="font-semibold">{customer.customerName}</p>
-                      {customer.rbCompanyId && (
-                        <p className="text-xs text-muted-foreground">
-                          RB ID: {customer.rbCompanyId}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{customer.customerCode}</TableCell>
-                  <TableCell>{customer.contactPerson}</TableCell>
-                  <TableCell>{customer.contactEmail}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        customer.status === 'ACTIVE' ? 'default' : 'outline'
-                      }
-                    >
-                      {customer.status === 'ACTIVE' ? '启用' : '停用'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(customer)}
-                        aria-label="编辑"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(customer)}
-                        aria-label="删除"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {filtered.length === 0 && (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              暂无数据
-            </div>
-          )}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              customer={customer}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
-      </Card>
+        {filtered.length === 0 && (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            暂无数据
+          </div>
+        )}
+      </div>
 
       <CustomerForm
         open={editOpen}

@@ -67,6 +67,7 @@ const CustomerForm: FC<CustomerFormProps> = ({
   onClose,
   initialData,
 }) => {
+  const isEdit = Boolean(initialData)
   const { addCustomer, updateCustomer, searchCompanies } = useCustomerStore()
   const form = useForm<CustomerFormValues>({ defaultValues })
   const [options, setOptions] = useState<Company[]>([])
@@ -116,10 +117,10 @@ const CustomerForm: FC<CustomerFormProps> = ({
   )
 
   useEffect(() => {
-    if (open) {
+    if (open && !isEdit) {
       handleSearch('')
     }
-  }, [open, handleSearch])
+  }, [open, handleSearch, isEdit])
 
   const onSubmit = async (values: CustomerFormValues) => {
     if (initialData) {
@@ -138,49 +139,51 @@ const CustomerForm: FC<CustomerFormProps> = ({
         </DialogHeader>
 
         <div className="grid gap-6">
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">RB 公司库</p>
-                <p className="text-xs text-muted-foreground">
-                  输入公司名称或编码搜索，点击条目自动填充表单
-                </p>
-              </div>
-              {companyLoading && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/60 border-t-transparent" />
-                  搜索中...
+          {!isEdit && (
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">RB 公司库</p>
+                  <p className="text-xs text-muted-foreground">
+                    输入公司名称或编码搜索，点击条目自动填充表单
+                  </p>
                 </div>
-              )}
-            </div>
-            <div className="mt-3 space-y-3">
-              <Input
-                placeholder="输入公司名称或编码搜索"
-                value={companyInput}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-              <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/60 p-2 text-sm">
-                {options.length === 0 && (
-                  <p className="text-muted-foreground">暂无匹配结果</p>
+                {companyLoading && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/60 border-t-transparent" />
+                    搜索中...
+                  </div>
                 )}
-                {options.map((option) => (
-                  <button
-                    key={option.companyId}
-                    className="flex w-full flex-col gap-1 rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => handleSelectCompany(option)}
-                  >
-                    <div className="flex items-center justify-between text-sm font-medium">
-                      <span>{option.companyName}</span>
-                      <Badge variant="outline">{option.companyCode}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {option.companyAddress}
-                    </p>
-                  </button>
-                ))}
+              </div>
+              <div className="mt-3 space-y-3">
+                <Input
+                  placeholder="输入公司名称或编码搜索"
+                  value={companyInput}
+                  onChange={(e) => handleSearch(e.target.value)}
+                />
+                <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/60 p-2 text-sm">
+                  {options.length === 0 && (
+                    <p className="text-muted-foreground">暂无匹配结果</p>
+                  )}
+                  {options.map((option) => (
+                    <button
+                      key={option.companyId}
+                      className="flex w-full flex-col gap-1 rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => handleSelectCompany(option)}
+                    >
+                      <div className="flex items-center justify-between text-sm font-medium">
+                        <span>{option.companyName}</span>
+                        <Badge variant="outline">{option.companyCode}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {option.companyAddress}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <Form {...form}>
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
@@ -207,7 +210,7 @@ const CustomerForm: FC<CustomerFormProps> = ({
                     <FormItem>
                       <FormLabel>客户编码</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} disabled={isEdit} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
