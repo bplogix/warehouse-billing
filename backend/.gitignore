@@ -1,0 +1,32 @@
+# Python Code Cache
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Virtual Environment
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.venv/
+
+# Test Coverage
+# tests/
+logs/
+examples/
+
+# IDE/macOS/AI
+.vscode
+.DS_Store
+.claude
+
+# Backup
+db/*.gz
+**/*.backup
+
+# 临时文件
+tmp/
+.coverage

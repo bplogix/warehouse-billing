@@ -1,0 +1,131 @@
+[project]
+name = "warehouse-billing"
+version = "0.1.0"
+description = "智能仓储-计费"
+readme = "README.md"
+requires-python = ">=3.12.10"
+dependencies = [
+    "fastapi[standard]",
+    "uvicorn[standard]>=0.38.0",
+    "httpx>=0.28.1",
+    "tenacity>=9.1.2",
+    "xmltodict>=1.0.2",
+    "loguru>=0.7.3",
+    "pydantic>=2.12.4",
+    "pydantic-settings>=2.12.0",
+    "structlog>=25.5.0",
+]
+
+# ------------------------------------------------------------
+#  根目录 dev 依赖(本文件夹用作 monorepo “开发环境”)
+#
+#  注意：
+#  - 这些依赖不会写入任何子项目
+#  - 不参与依赖解析，不干扰 apps 和 packages 的版本
+#  - 常用于 lint / format / test / commit 工具
+#  - root 不是一个 project，所以不需要 [project]
+# ------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "alembic>=1.17.1",
+    "commitizen>=4.10.0",      # 统一提交规范(czg、cz)
+    "mypy>=1.18.2",            # 类型检查工具
+    "pre-commit>=4.4.0",       # Git Hook 管理
+    "pytest>=9.0.0",           # 测试框架
+    "pytest-asyncio>=1.3.0",   # 异步测试支持
+    "pytest-cov>=7.0.0",       # 测试覆盖率统计
+    "python-dotenv>=1.2.1",    # 加载 .env
+    "ruff>=0.14.4",            # 统一格式化 + lint 工具
+    "setuptools>=80.9.0",      # 一些内部工具需要
+    "rich>=14.2.0",
+]
+
+# ------------------------------------------------------------
+#  FastAPI 热更新目录
+#  用 fastapi dev 的时候会监听这些路径，实现自动重载
+# ------------------------------------------------------------
+[tool.fastapi]
+reload-directories = [
+    "src",
+]
+
+# Ruff 配置
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "alembic",
+    "__pycache__",
+    "tests"
+]
+
+# 格式化配置
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# 启用的规则
+[tool.ruff.lint]
+select = [
+    "B",   # bugbear，强烈推荐
+    "E",   # pycodestyle (基础)
+    "F",   # pyflakes (未使用变量、未定义变量等)
+    "N",   # pep8-naming 用来检查 命名规范s
+    "I",   # isort：import 排序
+    "W",   # warnings
+    "C4",  # flake8-comprehensions 检查 推导式(列表推导、字典推导、集合推导)写得是否 Pythonic
+    "UP",  # pyupgrade：现代化代码
+    # "RUF", # ruff 自己的规则(多数很有用)
+]
+# 忽略的规则
+ignore = [
+    # ----- 通用 & 现代 Python 项目常禁 -----
+    "B008",  # FastAPI Depends() 在参数默认值中是合法的åå
+    "E501",  # line too long —— 你都用 formatter 了，交给 black/isort 处理更好
+    "N815", # 检查遵循 mixedCase (驼峰命名法) 约定的类变量名称
+    # ----- 常见但几乎都不启用 -----
+    "PLR2004", # Magic numbers，不少业务代码都会有固定数字
+    "PLR0913", # Too many arguments —— 实际业务有时很难避免
+    "PLR0914", # Too many local variables —— 同理
+    "PLR0912", # Too many branches —— 业务逻辑复杂时会烦死你
+    "TRY003",  # Avoid long exception messages —— 不符合真实需求
+    "TRY201",  # `raise from` 要求太严格
+    "RUF100",  # Imports sorting 冲突(如果你更信任 black/isort)
+    # ----- Tests 中常禁 -----
+    "S101", # assert 使用限制，在测试里你肯定要用 assert
+]
+
+# isort 配置
+[tool.ruff.lint.isort]
+force-single-line = false
+force-wrap-aliases = false
+combine-as-imports = true
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+# 类型检查严格程度 (根据项目情况调整)
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_decorators = false
+
+exclude = [
+    "alembic/",
+    "scripts/",
+    "tests/",
+    "\\.venv/"
+]

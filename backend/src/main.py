@@ -1,0 +1,55 @@
+"""
+Yamato Proxy - DDD 架构
+
+标准的领域驱动设计分层:
+- Presentation Layer (API 路由)
+- Application Layer (用例编排)
+- Domain Layer (业务逻辑)
+- Infrastructure Layer (技术实现)
+"""
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from src.presentation.api import router
+from src.presentation.api.v1 import router as api_v1_router
+from src.shared.config import settings
+from src.shared.logger import setup_logging
+from src.shared.logger.middlewares import RequestContextMiddleware
+from src.shared.middlewares.cors import CORSHandleMiddleware
+from src.shared.middlewares.exception import ExceptionHandlerMiddleware
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+
+    # ⚡ [启动阶段] 初始化日志系统自动读取 settings.log.*
+    setup_logging()
+
+    # 启动时初始化
+    yield
+    # 关闭时清理资源
+
+
+# 创建 FastAPI 应用实例
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    debug=settings.DEBUG,
+    lifespan=lifespan,
+)
+
+# ⚡ middleware 必须在 app 实例创建后挂载
+app.add_middleware(RequestContextMiddleware)
+
+# 添加异常处理中间件
+app.add_middleware(ExceptionHandlerMiddleware)
+
+# 添加 CORS 中间件
+app.add_middleware(CORSHandleMiddleware)
+
+# 包含路由 - DDD 架构
+app.include_router(router)
+app.include_router(api_v1_router)
