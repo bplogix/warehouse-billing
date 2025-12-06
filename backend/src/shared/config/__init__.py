@@ -1,6 +1,7 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
+from src.shared.config.auth_config import DingTalkAuthSettings, JwtSettings
 from src.shared.config.cors_config import CorsSettings
 from src.shared.config.database_config import ExternalMySQLSettings, PostgresSettings, RedisSettings
 from src.shared.config.log_config import LogSettings
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
     postgres: PostgresSettings = Field(default_factory=PostgresSettings)
     mysql_external: ExternalMySQLSettings = Field(default_factory=ExternalMySQLSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
+    dingtalk: DingTalkAuthSettings = Field(default_factory=lambda: DingTalkAuthSettings())
+    jwt: JwtSettings = Field(default_factory=lambda: JwtSettings())
 
     class Config:
         env_file = ".env"
