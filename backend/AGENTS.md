@@ -111,3 +111,7 @@ backend/
 - **监控**：上线环境需收集 `X-Trace-Id`，后端/前端应回传该 header 以便链路排查。
 
 **关键**：始终通过 Application 层暴露用例，结合 `RequestContextMiddleware` 保证日志可观测性，并使用 uv + Ruff + Mypy + Pytest 维持统一的可重复开发体验。
+
+## 开发文档
+- 所有生成的文档按照功能命名
+- 文档保存路径 `docs/*`
