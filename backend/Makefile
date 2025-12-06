@@ -32,11 +32,11 @@ endif
 
 ## 运行程序（根据你的入口修改）
 run: ## 本地运行（uvicorn 热重载）
-	$(UV) run uvicorn src.main:app --reload --port 8002
+	$(UV) run uvicorn src.main:app --reload --port 8000
 	@echo="启动生产模式"
 
 dev: ## fastapi dev（需 uv）
-	$(UV) run --project src fastapi dev src/main.py --port 8002
+	$(UV) run --project src fastapi dev src/main.py --port 8000
 	@echo="web启动完成"
 
 ## 清理虚拟环境

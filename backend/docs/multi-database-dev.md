@@ -22,7 +22,7 @@
           │PostgreSQL │ Redis Cache       │
           │(rw)       │ (cache/ratelimit) │
           │           │                   │
-          │ MySQL (ro external reporting) │
+          │ MySQL (ro external system)   │
           └───────────────────────────────┘
 ```
 
@@ -30,7 +30,7 @@
 
 1. **单一主库**：所有写操作仅落 PostgreSQL，Application 层不直接感知数据库细节。
 2. **只读 MySQL**：通过独立仓储访问外部 MySQL，严格限制为 SELECT；如需更新由外部系统负责。
-3. **集中配置**：`shared/config` 中声明 `POSTGRES_DSN`、`REDIS_URL`、`MYSQL_REPORTING_DSN` 等变量。
+3. **集中配置**：`shared/config` 中声明 `POSTGRES_HOST/PORT/USER/PASSWORD/DATABASE`、`REDIS_URL`、`MYSQL_EXTERNAL_HOST/PORT/USER/PASSWORD/DATABASE` 等变量，由配置类拼装 SQLAlchemy URL。
 4. **生命周期管理**：FastAPI `lifespan` 统一初始化/关闭连接池；Redis 客户端与 MySQL 连接均通过上下文管理。
 5. **可观测性**：所有数据库调用记录 trace_id、耗时与错误码，方便排查。
 
@@ -41,7 +41,7 @@
 - 依赖：`sqlalchemy[asyncio]`, `asyncpg`.
 - 初始化：
   ```python
-  engine = create_async_engine(settings.postgres_dsn, pool_size=10, max_overflow=20)
+  engine = create_async_engine(settings.postgres.sqlalchemy_url(), pool_size=10, max_overflow=20)
   SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
   ```
 - 依赖注入：
@@ -59,7 +59,7 @@
 - 依赖：`redis.asyncio`.
 - 初始化：
   ```python
-  redis_client = redis.from_url(settings.redis_url, max_connections=settings.redis_pool_size, encoding="utf-8", decode_responses=True)
+  redis_client = redis.from_url(settings.redis.URL, max_connections=settings.redis.POOL_SIZE, encoding="utf-8", decode_responses=True)
   ```
 - 使用：
   - Customer 详情缓存：`GET/SETEX customer:{id}`
@@ -70,15 +70,15 @@
 ### MySQL（外部只读）
 
 - 依赖：`sqlalchemy[asyncio]`, `aiomysql`.
-- 用途：读取外部报表/客户画像，如 `ReportingCustomerGateway`。
+- 用途：读取外部报表/客户画像，如 `ExternalCustomerGateway`。
 - 初始化：
   ```python
-  reporting_engine = create_async_engine(
-      settings.mysql_reporting_dsn,
+  external_engine = create_async_engine(
+      settings.mysql_external.sqlalchemy_url(),
       pool_recycle=1800,
       connect_args={"charset": "utf8mb4"}
   )
-  ReportingSession = async_sessionmaker(reporting_engine)
+  ExternalSession = async_sessionmaker(external_engine)
   ```
 - 访问约束：
   - 所有仓储只允许 `SELECT`；可在仓储层封装公共查询方法，禁止 commit。
@@ -89,23 +89,41 @@
 
 `.env` 模板：
 ```
-POSTGRES_DSN=postgresql+asyncpg://user:pwd@localhost:5432/warehouse_billing
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=warehouse
+POSTGRES_PASSWORD=secret
+POSTGRES_DATABASE=warehouse_billing
 REDIS_URL=redis://localhost:6379/0
 REDIS_POOL_SIZE=20
-MYSQL_REPORTING_DSN=mysql+aiomysql://user:pwd@external-host:3306/reporting
+MYSQL_EXTERNAL_HOST=external-host
+MYSQL_EXTERNAL_PORT=3306
+MYSQL_EXTERNAL_USER=readonly
+MYSQL_EXTERNAL_PASSWORD=secret
+MYSQL_EXTERNAL_DATABASE=readonly
 ```
 
 `shared/config/database.py` 示例：
 ```python
 class PostgresSettings(BaseSettings):
-    postgres_dsn: PostgresDsn
+    HOST: str
+    PORT: int
+    USER: str
+    PASSWORD: str
+    DATABASE: str
+    def sqlalchemy_url(self) -> str: ...
 
 class RedisSettings(BaseSettings):
-    redis_url: AnyUrl
-    redis_pool_size: int = 20
+    URL: AnyUrl
+    POOL_SIZE: int = 20
 
-class ReportingMysqlSettings(BaseSettings):
-    mysql_reporting_dsn: AnyUrl
+class ExternalMySQLSettings(BaseSettings):
+    HOST: str
+    PORT: int
+    USER: str
+    PASSWORD: str
+    DATABASE: str
+    def sqlalchemy_url(self) -> str: ...
 ```
 
 `make init` 增加：
@@ -118,14 +136,14 @@ class ReportingMysqlSettings(BaseSettings):
   - 初始化 Postgres engine、Redis 客户端、MySQL engine。
   - 注册在 `state` 中或通过依赖注入容器暴露。
 - `shutdown`：
-  - 调用 `engine.dispose()`、`await redis_client.close()`、`reporting_engine.dispose()`。
+  - 调用 `engine.dispose()`、`await redis_client.close()`、`external_engine.dispose()`。
 
 ## 监控与告警
 
 - 健康检查：
   - `/health/postgres`：执行 `SELECT 1`.
   - `/health/redis`：`PING`.
-  - `/health/reporting-mysql`：`SELECT 1`.
+  - `/health/external-mysql`：`SELECT 1`.
 - 指标：
   - 查询耗时、错误率、连接池使用情况（可通过 Prometheus exporter 或自定义 metrics）。
   - 对外部 MySQL 加限流与超时，防止卡住主流程。

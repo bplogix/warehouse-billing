@@ -1,5 +1,5 @@
 """
-Yamato Proxy - DDD 架构
+DDD 架构
 
 标准的领域驱动设计分层:
 - Presentation Layer (API 路由)
@@ -12,6 +12,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.intrastructure.cache.redis import close_redis, init_redis
+from src.intrastructure.database.mysql_external import external_mysql_db
+from src.intrastructure.database.postgres import postgres_db
 from src.presentation.api import router
 from src.presentation.api.v1 import router as api_v1_router
 from src.shared.config import settings
@@ -27,10 +30,17 @@ async def lifespan(app: FastAPI):
 
     # ⚡ [启动阶段] 初始化日志系统自动读取 settings.log.*
     setup_logging()
-
-    # 启动时初始化
-    yield
-    # 关闭时清理资源
+    try:
+        # 启动时初始化
+        await postgres_db.connect()
+        await external_mysql_db.connect()
+        await init_redis()
+        yield
+    finally:
+        # 关闭时清理资源
+        await external_mysql_db.dispose()
+        await postgres_db.dispose()
+        await close_redis()
 
 
 # 创建 FastAPI 应用实例

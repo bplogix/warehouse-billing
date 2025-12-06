@@ -115,3 +115,7 @@ backend/
 ## 开发文档
 - 所有生成的文档按照功能命名
 - 文档保存路径 `docs/*`
+
+## 调试日志
+- 所有的日志对象不可以从 `structlog.get_logger(__name__)` 直接获取日志对象
+- 必须从 `src/shared/logger/factories.py` 取得，如果不是DDD分层的业务默认用 `log` 这个对象用于日志输出
