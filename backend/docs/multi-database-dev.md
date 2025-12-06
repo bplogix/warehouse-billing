@@ -127,8 +127,8 @@ class ExternalMySQLSettings(BaseSettings):
 ```
 
 `make init` 增加：
-- 检查 Postgres 可连通并执行 `alembic upgrade head`
-- 校验 Redis、MySQL 连接（可选 ping/简单查询）
+- 检查 Postgres 可连通并执行 `SELECT 1`
+- 校验 Redis（`PING`）与外部 MySQL（`SELECT 1`）连接，可通过 `make check-connections` 单独触发
 
 ## FastAPI 生命周期
 

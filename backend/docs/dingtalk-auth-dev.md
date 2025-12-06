@@ -13,7 +13,7 @@
 1. **OAuth2 免登/扫码**：前端通过钉钉提供的 `authCode` 交换 `accessToken` + `userInfo`，后端只需校验并换取内部 JWT。
 2. **服务器端验证**：后端维护 `DingTalkAuthGateway`，封装钉钉开放平台接口（`getuserinfo_bycode`、`user/get` 等）。
 3. **JWT 网关**：后端使用 `shared/config` 的签名密钥生成内部 JWT，在 RequestContext 中解析。
-4. **权限域控制**：钉钉组织关系 → IAM 服务 → `BusinessDomainGuard`。如果 IAM 尚未完成，先预留接口。
+4. **权限域控制**：钉钉组织关系/角色/职位 → 本地 `UserDomainMapping`（或配置表）→ `BusinessDomainGuard`，后续如接入企业 IAM 再替换数据源。
 
 ## 分层设计
 
@@ -74,10 +74,11 @@ sequenceDiagram
 
 ## 开发环境策略（无钉钉接入）
 
-- **伪造 Gateway**：在 `settings.app_env == "dev"` 时，`DingTalkAuthGateway` 返回固定用户 payload（可从 `.env` 中读取 `MOCK_USER_ID`、`MOCK_DOMAIN_CODES`），并记录 warning 日志。
-- **本地 JWT**：提供 `POST /auth/dev-login`，仅 dev 环境可用，允许传入 `userId`、`domainCodes` 生成内部 JWT，方便前端调试。
-- **安全边界**：确保 dev-only 接口在生产环境自动禁用，CI/CD 在部署前校验 `APP_ENV`。
-- **测试对齐**：集成测试使用 dev mock，以便覆盖 RequestContext 注入流程；E2E/灰度环境必须走真实钉钉 OAuth。
+- **配置切换**：在 `.env` 中新增 `DINGTALK_AUTH_MODE=real|mock`（默认 `real`）。`Settings` 根据该字段注册 `RealDingTalkAuthGateway` 或 `MockDingTalkAuthGateway`。
+- **Mock Gateway**：mock 实现读取 `MOCK_DING_USER_ID`、`MOCK_DOMAIN_CODES` 等变量生成固定 payload，可允许通过查询参数覆盖；调用时记录 `warning` 并在响应头加 `X-Auth-Mock: true`。
+- **Dev-only 登录端点**：在 `settings.ENV == "dev"` 且 `DINGTALK_AUTH_MODE=mock` 时启用 `POST /auth/dev-login`，直接生成 JWT 供前端调试；生产环境自动不注册该路由。
+- **安全边界**：CI/CD 校验生产环境 `DINGTALK_AUTH_MODE必须为 real`，避免误用 mock；日志中脱敏 `unionId`。
+- **测试对齐**：单元/集成测试默认注入 mock gateway 验证用例流程，E2E 或灰度环境开启 `real` 模式走完整 OAuth。
 
 ## 测试建议
 
@@ -85,8 +86,14 @@ sequenceDiagram
 - Presentation 层集成测试：使用 FastAPI TestClient 注入假 JWT，确保 `RequestContextMiddleware` 正常写入 `trace_id`。
 - 负载场景：使用 `locust`/`k6` 模拟高并发，验证 gateway 的连接池和超时配置。
 
+## 角色/职位映射策略
+
+- **映射规则**：根据钉钉角色、职位、部门或自定义字段定义 `role -> domain_codes`，存放在配置表或后台可编辑面板（示例：`ROLE_STD_AGENT` 对应 `GENERAL_WAREHOUSING`）。
+- **同步机制**：`DingTalkAuthGateway` 在换取用户资料时拿到角色/职位列表，调用 `UserDomainMappingService` 将其映射为 `domain_codes`；若无匹配则拒绝/默认最小权限。
+- **可观测性**：在日志中绑定 “角色 → 域” 的推导链路（`role=ROLE_FBK_MANAGER domain=BONDED_WAREHOUSING`），便于排查权限问题。
+- **未来迁移**：当企业 IAM 提供正式接口时，只需替换 `UserDomainMappingService` 的数据来源，Application/Domain 层无感知。
+
 ## 待办与风险
 
-- IAM 尚未提供业务域接口，需 mock 或临时配置。
 - 若钉钉接口限流，需提前接入缓存或本地用户映射以降低频次。
 - 需要完善日志脱敏策略（隐藏 `unionId` 等敏感字段）。

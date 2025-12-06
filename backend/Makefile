@@ -9,7 +9,7 @@ help: ## 打印常用命令说明
 	@echo "可用命令:"; \
 	awk 'BEGIN {FS=":.*##"} /^[a-zA-Z0-9_.-]+:.*##/ {gsub(/^ +| $$/, "", $$2); printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-init: venv install env ## 初始化项目：创建虚拟环境 + 安装依赖 + 生成 .env
+init: venv install env check-connections ## 初始化项目：创建虚拟环境 + 安装依赖 + 生成 .env + 检查依赖连通性
 	@echo "🎉 项目初始化完成"
 
 ## 创建虚拟环境（uv 会自动处理 python 版本）
@@ -19,6 +19,9 @@ venv: ## 创建虚拟环境（uv 会自动处理 python 版本）
 ## 安装依赖（pyproject.toml）
 install: ## 安装依赖（pyproject.toml）
 	$(UV) sync
+
+check-connections: ## 检查 Postgres/Redis/外部 MySQL 连通性
+	$(UV) run python scripts/check_connections.py
 
 ## 生成 .env（如果不存在）
 env: ## 生成 .env（如果不存在）
