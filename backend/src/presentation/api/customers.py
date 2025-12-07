@@ -8,9 +8,11 @@ from src.application.customer.commands import (
     QueryCustomersCommand,
     UpdateCustomerStatusCommand,
 )
+from src.application.customer.group_commands import CreateCustomerGroupCommand, ReplaceGroupMembersCommand
 from src.application.customer.use_cases import (
     CreateCustomerUseCase,
     GetCustomerDetailUseCase,
+    ManageCustomerGroupUseCase,
     QueryCustomersUseCase,
     UpdateCustomerStatusUseCase,
 )
@@ -19,12 +21,16 @@ from src.presentation.dependencies.auth import get_current_user
 from src.presentation.dependencies.customer import (
     get_create_customer_use_case,
     get_customer_detail_use_case,
+    get_manage_customer_group_use_case,
     get_query_customers_use_case,
     get_update_customer_status_use_case,
 )
 from src.presentation.schema.customer import (
     CustomerCreateRequest,
     CustomerDetailResponse,
+    CustomerGroupCreateSchema,
+    CustomerGroupMembersSchema,
+    CustomerGroupResponse,
     CustomerListResponse,
     CustomerResponse,
     CustomerStatusUpdateSchema,
@@ -34,6 +40,7 @@ from src.shared.schemas.auth import CurrentUser
 from src.shared.schemas.response import SuccessResponse
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
+group_router = APIRouter(prefix="/customer-groups", tags=["CustomerGroups"])
 
 
 @router.post("", response_model=SuccessResponse[CustomerResponse], status_code=status.HTTP_201_CREATED)
@@ -111,3 +118,33 @@ async def update_customer_status(
     updated = await use_case.execute(cmd, operator=current_user.user_id)
     if not updated:
         raise AppError(message="Customer not found", code=status.HTTP_404_NOT_FOUND)
+
+
+@group_router.post("", response_model=SuccessResponse[CustomerGroupResponse], status_code=status.HTTP_201_CREATED)
+async def create_customer_group(
+    payload: CustomerGroupCreateSchema,
+    current_user: CurrentUser = Depends(get_current_user),
+    use_case: ManageCustomerGroupUseCase = Depends(get_manage_customer_group_use_case),
+) -> SuccessResponse[CustomerGroupResponse]:
+    cmd = CreateCustomerGroupCommand(
+        name=payload.name,
+        business_domain=payload.business_domain,
+        description=payload.description,
+        member_ids=payload.member_ids,
+    )
+    result = await use_case.create_group(cmd, operator=current_user.user_id)
+    return SuccessResponse(data=CustomerGroupResponse.from_model(result.group))
+
+
+@group_router.put("/{group_id}/members", response_model=SuccessResponse[CustomerGroupResponse])
+async def replace_group_members(
+    group_id: int,
+    payload: CustomerGroupMembersSchema,
+    current_user: CurrentUser = Depends(get_current_user),
+    use_case: ManageCustomerGroupUseCase = Depends(get_manage_customer_group_use_case),
+) -> SuccessResponse[CustomerGroupResponse]:
+    cmd = ReplaceGroupMembersCommand(group_id=group_id, member_ids=payload.member_ids)
+    group = await use_case.replace_members(cmd, operator=current_user.user_id)
+    if group is None:
+        raise AppError(message="Customer group not found", code=status.HTTP_404_NOT_FOUND)
+    return SuccessResponse(data=CustomerGroupResponse.from_model(group))

@@ -10,18 +10,25 @@ from src.application.customer.commands import (
     QueryCustomersCommand,
     UpdateCustomerStatusCommand,
 )
+from src.application.customer.group_commands import (
+    CreateCustomerGroupCommand,
+    ReplaceGroupMembersCommand,
+)
 from src.domain.customer import (
     BusinessDomainGuard,
     CompanyEntity,
     CustomerEntity,
+    CustomerGroupEntity,
     CustomerImportService,
 )
 from src.intrastructure.database.models import (
     Company,
     Customer,
+    CustomerGroup,
+    CustomerGroupMember,
     CustomerStatus as ORMCustStatus,
 )
-from src.intrastructure.repositories import CompanyRepository, CustomerRepository
+from src.intrastructure.repositories import CompanyRepository, CustomerGroupRepository, CustomerRepository
 from src.shared.logger.factories import app_logger
 
 logger = app_logger.bind(component="customer_use_cases")
@@ -165,3 +172,59 @@ class UpdateCustomerStatusUseCase:
         orm_status = ORMCustStatus(cmd.status.value)
         await repo.update_status(cmd.customer_id, orm_status, operator=operator)
         return True
+
+
+@dataclass
+class ManageGroupResult:
+    group: CustomerGroup
+
+
+class ManageCustomerGroupUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create_group(
+        self,
+        cmd: CreateCustomerGroupCommand,
+        operator: str,
+    ) -> ManageGroupResult:
+        repo = CustomerGroupRepository(self._session)
+        guard = BusinessDomainGuard.from_context()
+        guard.ensure_access(cmd.business_domain)
+        group_entity = CustomerGroupEntity(name=cmd.name, business_domain=cmd.business_domain)
+        group = CustomerGroup(name=group_entity.name, business_domain=group_entity.business_domain)
+        group.created_by = operator
+        group.description = cmd.description
+        async with self._session.begin():
+            await repo.add_group(group)
+            if cmd.member_ids:
+                members = [
+                    CustomerGroupMember(group_id=group.id, customer_id=customer_id, business_domain=cmd.business_domain)
+                    for customer_id in cmd.member_ids
+                ]
+                await repo.replace_members(group.id, members)
+        return ManageGroupResult(group=group)
+
+    async def replace_members(
+        self,
+        cmd: ReplaceGroupMembersCommand,
+        operator: str,
+    ) -> CustomerGroup | None:
+        repo = CustomerGroupRepository(self._session)
+        group = await repo.get_group(cmd.group_id)
+        if group is None:
+            return None
+        guard = BusinessDomainGuard.from_context()
+        guard.ensure_access(group.business_domain)
+        members = [
+            CustomerGroupMember(
+                group_id=cmd.group_id,
+                customer_id=customer_id,
+                business_domain=group.business_domain,
+                created_by=operator,
+            )
+            for customer_id in cmd.member_ids
+        ]
+        async with self._session.begin():
+            await repo.replace_members(cmd.group_id, members)
+        return group

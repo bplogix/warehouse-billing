@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from pydantic import Field
 
 from src.domain.customer import CustomerStatus
-from src.intrastructure.database.models import Company, Customer, CustomerGroupMember
+from src.intrastructure.database.models import Company, Customer, CustomerGroup
 from src.presentation.schema.base import CamelModel
 
 
@@ -77,10 +75,31 @@ class CustomerDetailResponse(CustomerResponse):
     def from_model(cls, model: Customer) -> CustomerDetailResponse:
         data = CustomerResponse.from_model(model).model_dump()
         company = CompanySummary.from_model(model.company) if model.company else None
-        group_members: Sequence[CustomerGroupMember] = getattr(model, "groups", [])
-        groups = [member.group_id for member in group_members]
+        groups = [member.group_id for member in model.groups]
         data.update({"company": company, "groups": groups})
         return cls(**data)
+
+
+class CustomerGroupCreateSchema(CamelModel):
+    name: str
+    business_domain: str = Field(alias="businessDomain")
+    description: str | None = None
+    member_ids: list[int] | None = Field(default=None, alias="memberIds")
+
+
+class CustomerGroupResponse(CamelModel):
+    id: int
+    name: str
+    business_domain: str = Field(alias="businessDomain")
+    description: str | None = None
+
+    @classmethod
+    def from_model(cls, model: CustomerGroup) -> CustomerGroupResponse:
+        return cls(id=model.id, name=model.name, businessDomain=model.business_domain, description=model.description)
+
+
+class CustomerGroupMembersSchema(CamelModel):
+    member_ids: list[int] = Field(alias="memberIds")
 
 
 class CustomerStatusUpdateSchema(CamelModel):

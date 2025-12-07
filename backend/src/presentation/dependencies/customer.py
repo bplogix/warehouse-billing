@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.application.customer.use_cases import (
     CreateCustomerUseCase,
     GetCustomerDetailUseCase,
+    ManageCustomerGroupUseCase,
     QueryCustomersUseCase,
     UpdateCustomerStatusUseCase,
 )
@@ -34,3 +35,9 @@ def get_update_customer_status_use_case(
     session: AsyncSession = Depends(get_postgres_session),
 ) -> UpdateCustomerStatusUseCase:
     return UpdateCustomerStatusUseCase(session=session)
+
+
+def get_manage_customer_group_use_case(
+    session: AsyncSession = Depends(get_postgres_session),
+) -> ManageCustomerGroupUseCase:
+    return ManageCustomerGroupUseCase(session=session)
