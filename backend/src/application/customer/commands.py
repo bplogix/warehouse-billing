@@ -23,3 +23,19 @@ class CreateCustomerCommand:
     source_ref_id: str | None = None
     bonded_license_no: str | None = None
     customs_code: str | None = None
+
+
+@dataclass(slots=True)
+class QueryCustomersCommand:
+    keyword: str | None = None
+    business_domain: str | None = None
+    status: CustomerStatus | None = None
+    source: str | None = None
+    limit: int = 20
+    offset: int = 0
+
+
+@dataclass(slots=True)
+class UpdateCustomerStatusCommand:
+    customer_id: int
+    status: CustomerStatus

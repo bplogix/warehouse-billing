@@ -24,7 +24,5 @@ def handle_app_error(request: Request, exc: Exception) -> JSONResponse:
         f"Yamato远程接口的异常 - URL: {request.url} - 错误类型: {type(exc).__name__} - 错误信息: {exc!s}",
         exc_info=False,
     )
-    response = ErrorResponse(
-        error_code=ErrorCode.SYSTEM_ERROR, message=ErrorMessage.get_message(ErrorCode.SYSTEM_ERROR)
-    )
+    response = ErrorResponse(code=ErrorCode.SYSTEM_ERROR, message=ErrorMessage.get_message(ErrorCode.SYSTEM_ERROR))
     return JSONResponse(status_code=HTTPStatus.OK, content=response.model_dump(by_alias=True))

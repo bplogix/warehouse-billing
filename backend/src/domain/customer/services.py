@@ -21,6 +21,10 @@ class BusinessDomainGuard:
             logger.warning("domain access denied", domain=domain)
             raise PermissionError(f"domain {domain} not allowed")
 
+    @property
+    def allowed_domains(self) -> list[str]:
+        return list(self._allowed)
+
     @classmethod
     def from_context(cls) -> BusinessDomainGuard:
         ctx = get_current_user_context()
