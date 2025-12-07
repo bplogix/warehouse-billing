@@ -16,6 +16,7 @@ class DingTalkAuthSettings(BaseSettings):
     ROLE_DOMAIN_MAPPING: dict[str, list[str]] = Field(default_factory=dict)
     QR_STATE_PREFIX: str = "dingtalk:qr"
     QR_STATE_TTL_SECONDS: int = 120
+    QR_REDIRECT_URI: Annotated[AnyHttpUrl | str, Field(default="")] = ""
 
     MOCK_USER_ID: str = "mock-user"
     MOCK_UNION_ID: str = "mock-union"

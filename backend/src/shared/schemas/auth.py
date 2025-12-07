@@ -1,8 +1,21 @@
 from __future__ import annotations
 
+from datetime import datetime
+from enum import StrEnum
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from src.shared.models import UserContext
+
+
+class QRStatus(StrEnum):
+    """二维码登录状态."""
+
+    WAITING = "waiting"
+    SCANNED = "scanned"
+    CONFIRMED = "confirmed"
+    EXPIRED = "expired"
 
 
 class DingTalkUserPayload(BaseModel):
@@ -94,3 +107,50 @@ class AuthTokensResponse(BaseModel):
 
     user: CurrentUser
     tokens: TokenPair
+
+
+class DingTalkQrCreateRequest(BaseModel):
+    """生成二维码的请求."""
+
+    client_type: Literal["pc"] = Field(default="pc", alias="clientType")
+
+    model_config = {
+        "populate_by_name": True,
+    }
+
+
+class DingTalkQrCreateResponse(BaseModel):
+    """生成二维码响应."""
+
+    auth_state: str = Field(alias="authState")
+    login_url: str = Field(alias="loginUrl")
+    expire_at: datetime = Field(alias="expireAt")
+
+    model_config = {
+        "populate_by_name": True,
+    }
+
+
+class DingTalkQrStatusResponse(BaseModel):
+    """二维码状态响应."""
+
+    status: QRStatus
+    auth_code: str | None = Field(default=None, alias="authCode")
+    expire_at: datetime = Field(alias="expireAt")
+
+    model_config = {
+        "populate_by_name": True,
+        "use_enum_values": True,
+    }
+
+
+class DingTalkCallbackPayload(BaseModel):
+    """钉钉回调载荷."""
+
+    state: str
+    status: QRStatus
+    auth_code: str | None = Field(default=None, alias="authCode")
+
+    model_config = {
+        "populate_by_name": True,
+    }

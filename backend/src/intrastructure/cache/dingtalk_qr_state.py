@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from enum import StrEnum
 from typing import Any
 
 from redis.asyncio import Redis
@@ -11,17 +10,9 @@ from redis.asyncio import Redis
 from src.intrastructure.cache.redis import get_redis_client
 from src.shared.config import settings
 from src.shared.logger.factories import infra_logger
+from src.shared.schemas.auth import QRStatus
 
 logger = infra_logger.bind(component="dingtalk_qr_state")
-
-
-class QRStatus(StrEnum):
-    """二维码登录状态."""
-
-    WAITING = "waiting"
-    SCANNED = "scanned"
-    CONFIRMED = "confirmed"
-    EXPIRED = "expired"
 
 
 @dataclass(slots=True)
