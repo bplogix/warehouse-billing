@@ -14,6 +14,8 @@ class DingTalkAuthSettings(BaseSettings):
     BASE_URL: Annotated[AnyHttpUrl | str, Field(default="https://oapi.dingtalk.com")] = "https://oapi.dingtalk.com"
     AUTH_MODE: str = "mock"  # real | mock
     ROLE_DOMAIN_MAPPING: dict[str, list[str]] = Field(default_factory=dict)
+    QR_STATE_PREFIX: str = "dingtalk:qr"
+    QR_STATE_TTL_SECONDS: int = 120
 
     MOCK_USER_ID: str = "mock-user"
     MOCK_UNION_ID: str = "mock-union"
@@ -39,7 +41,7 @@ class DingTalkAuthSettings(BaseSettings):
 class JwtSettings(BaseSettings):
     """JWT token 配置."""
 
-    SECRET_KEY: str = "change-me"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
