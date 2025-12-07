@@ -15,3 +15,10 @@ class CreateCustomerGroupCommand:
 class ReplaceGroupMembersCommand:
     group_id: int
     member_ids: list[int]
+
+
+@dataclass(slots=True)
+class QueryExternalCompaniesCommand:
+    keyword: str | None = None
+    limit: int = 20
+    offset: int = 0

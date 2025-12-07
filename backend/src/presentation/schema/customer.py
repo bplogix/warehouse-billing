@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from src.domain.customer import CustomerStatus
+from src.intrastructure.database.external.company import RbCompanyInfo
 from src.intrastructure.database.models import Company, Customer, CustomerGroup
 from src.presentation.schema.base import CamelModel
 
@@ -100,6 +101,21 @@ class CustomerGroupResponse(CamelModel):
 
 class CustomerGroupMembersSchema(CamelModel):
     member_ids: list[int] = Field(alias="memberIds")
+
+
+class ExternalCompanyResponse(CamelModel):
+    company_id: str = Field(alias="companyId")
+    company_name: str = Field(alias="companyName")
+    company_code: str | None = Field(alias="companyCode")
+
+    @classmethod
+    def from_model(cls, model: RbCompanyInfo) -> ExternalCompanyResponse:
+        return cls(companyId=model.COMPANY_ID, companyName=model.COMPANY_NAME, companyCode=model.COMPANY_CODE)
+
+
+class ExternalCompanyListResponse(CamelModel):
+    total: int
+    items: list[ExternalCompanyResponse]
 
 
 class CustomerStatusUpdateSchema(CamelModel):

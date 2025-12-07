@@ -8,12 +8,17 @@ from src.application.customer.commands import (
     QueryCustomersCommand,
     UpdateCustomerStatusCommand,
 )
-from src.application.customer.group_commands import CreateCustomerGroupCommand, ReplaceGroupMembersCommand
+from src.application.customer.group_commands import (
+    CreateCustomerGroupCommand,
+    QueryExternalCompaniesCommand,
+    ReplaceGroupMembersCommand,
+)
 from src.application.customer.use_cases import (
     CreateCustomerUseCase,
     GetCustomerDetailUseCase,
     ManageCustomerGroupUseCase,
     QueryCustomersUseCase,
+    QueryExternalCompaniesUseCase,
     UpdateCustomerStatusUseCase,
 )
 from src.domain.customer import CustomerStatus
@@ -23,6 +28,7 @@ from src.presentation.dependencies.customer import (
     get_customer_detail_use_case,
     get_manage_customer_group_use_case,
     get_query_customers_use_case,
+    get_query_external_companies_use_case,
     get_update_customer_status_use_case,
 )
 from src.presentation.schema.customer import (
@@ -34,6 +40,8 @@ from src.presentation.schema.customer import (
     CustomerListResponse,
     CustomerResponse,
     CustomerStatusUpdateSchema,
+    ExternalCompanyListResponse,
+    ExternalCompanyResponse,
 )
 from src.shared.error.app_error import AppError
 from src.shared.schemas.auth import CurrentUser
@@ -41,6 +49,7 @@ from src.shared.schemas.response import SuccessResponse
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
 group_router = APIRouter(prefix="/customer-groups", tags=["CustomerGroups"])
+external_router = APIRouter(prefix="/external-companies", tags=["ExternalCompanies"])
 
 
 @router.post("", response_model=SuccessResponse[CustomerResponse], status_code=status.HTTP_201_CREATED)
@@ -148,3 +157,16 @@ async def replace_group_members(
     if group is None:
         raise AppError(message="Customer group not found", code=status.HTTP_404_NOT_FOUND)
     return SuccessResponse(data=CustomerGroupResponse.from_model(group))
+
+
+@external_router.get("", response_model=SuccessResponse[ExternalCompanyListResponse])
+async def list_external_companies(
+    keyword: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    use_case: QueryExternalCompaniesUseCase = Depends(get_query_external_companies_use_case),
+) -> SuccessResponse[ExternalCompanyListResponse]:
+    cmd = QueryExternalCompaniesCommand(keyword=keyword, limit=limit, offset=offset)
+    result = await use_case.execute(cmd)
+    items = [ExternalCompanyResponse.from_model(model) for model in result.companies]
+    return SuccessResponse(data=ExternalCompanyListResponse(total=result.total, items=items))

@@ -12,6 +12,7 @@ from src.application.customer.commands import (
 )
 from src.application.customer.group_commands import (
     CreateCustomerGroupCommand,
+    QueryExternalCompaniesCommand,
     ReplaceGroupMembersCommand,
 )
 from src.domain.customer import (
@@ -21,6 +22,7 @@ from src.domain.customer import (
     CustomerGroupEntity,
     CustomerImportService,
 )
+from src.intrastructure.database.external.company import RbCompanyInfo
 from src.intrastructure.database.models import (
     Company,
     Customer,
@@ -29,6 +31,7 @@ from src.intrastructure.database.models import (
     CustomerStatus as ORMCustStatus,
 )
 from src.intrastructure.repositories import CompanyRepository, CustomerGroupRepository, CustomerRepository
+from src.intrastructure.repositories.external_company_repository import ExternalCompanyRepository
 from src.shared.logger.factories import app_logger
 
 logger = app_logger.bind(component="customer_use_cases")
@@ -228,3 +231,19 @@ class ManageCustomerGroupUseCase:
         async with self._session.begin():
             await repo.replace_members(cmd.group_id, members)
         return group
+
+
+@dataclass
+class ExternalCompaniesResult:
+    companies: list[RbCompanyInfo]
+    total: int
+
+
+class QueryExternalCompaniesUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def execute(self, cmd: QueryExternalCompaniesCommand) -> ExternalCompaniesResult:
+        repo = ExternalCompanyRepository(self._session)
+        items, total = await repo.list_companies(keyword=cmd.keyword, limit=cmd.limit, offset=cmd.offset)
+        return ExternalCompaniesResult(companies=items, total=total)

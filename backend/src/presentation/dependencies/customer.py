@@ -8,8 +8,10 @@ from src.application.customer.use_cases import (
     GetCustomerDetailUseCase,
     ManageCustomerGroupUseCase,
     QueryCustomersUseCase,
+    QueryExternalCompaniesUseCase,
     UpdateCustomerStatusUseCase,
 )
+from src.intrastructure.database.mysql_external import get_external_mysql_session
 from src.intrastructure.database.postgres import get_postgres_session
 
 
@@ -41,3 +43,9 @@ def get_manage_customer_group_use_case(
     session: AsyncSession = Depends(get_postgres_session),
 ) -> ManageCustomerGroupUseCase:
     return ManageCustomerGroupUseCase(session=session)
+
+
+def get_query_external_companies_use_case(
+    session: AsyncSession = Depends(get_external_mysql_session),
+) -> QueryExternalCompaniesUseCase:
+    return QueryExternalCompaniesUseCase(session=session)

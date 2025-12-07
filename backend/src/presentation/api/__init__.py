@@ -11,5 +11,6 @@ router.include_router(health.router, tags=["Health"])
 router.include_router(auth.router, tags=["Auth"])
 router.include_router(customers.router, tags=["Customers"])
 router.include_router(customers.group_router, tags=["CustomerGroups"])
+router.include_router(customers.external_router, tags=["ExternalCompanies"])
 
 __all__ = ["router"]
