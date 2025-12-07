@@ -1,5 +1,6 @@
 from urllib.parse import quote_plus
 
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,10 +15,18 @@ class PostgresSettings(BaseSettings):
     POOL_SIZE: int = 20
     MAX_OVERFLOW: int = 20
 
-    def sqlalchemy_url(self) -> str:
-        password = quote_plus(self.PASSWORD)
+    def _build_dsn(self, driver: str) -> str:
         user = quote_plus(self.USER)
-        return f"postgresql+asyncpg://{user}:{password}@{self.HOST}:{self.PORT}/{self.DATABASE}"
+        password = quote_plus(self.PASSWORD)
+        return f"postgresql+{driver}://{user}:{password}@{self.HOST}:{self.PORT}/{self.DATABASE}"
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        return self._build_dsn("asyncpg")
+
+    @property
+    def sync_url(self) -> str:
+        return self._build_dsn("psycopg2")
 
     model_config = SettingsConfigDict(
         env_prefix="DB_",

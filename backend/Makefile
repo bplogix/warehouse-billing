@@ -100,3 +100,19 @@ compose-down: ## docker-compose down
 
 deploy: compose-up ## 构建并启动（compose）
 	@echo "🚀 Docker 生产环境已启动"
+
+# 数据库迁移相关命令
+ALEMBIC=uv run alembic
+
+db-commit: ## 创建数据库迁移文件 (会提示输入描述)
+	@read -p "请输入迁移描述: " msg; \
+	$(ALEMBIC) revision --autogenerate -m "$$msg"
+
+db-up:
+	$(ALEMBIC) upgrade head
+
+db-down:
+	$(ALEMBIC) downgrade -1
+
+db-sql:
+	$(ALEMBIC) upgrade head --sql > migration.sql

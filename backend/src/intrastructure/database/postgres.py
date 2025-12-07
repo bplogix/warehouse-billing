@@ -32,7 +32,7 @@ class PostgresDatabase:
 
         db_settings = settings.postgres
         self._engine = create_async_engine(
-            db_settings.sqlalchemy_url(),
+            db_settings.sqlalchemy_url,
             pool_size=db_settings.POOL_SIZE,
             max_overflow=db_settings.MAX_OVERFLOW,
             pool_pre_ping=True,
