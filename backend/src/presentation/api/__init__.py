@@ -1,16 +1,14 @@
-"""API v1 路由"""
+"""API 路由"""
 
 from fastapi import APIRouter
 
-from . import auth, customers, health
+from . import health
+from .v1 import v1_router
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 # 注册子路由
 router.include_router(health.router, tags=["Health"])
-router.include_router(auth.router, tags=["Auth"])
-router.include_router(customers.router, tags=["Customers"])
-router.include_router(customers.group_router, tags=["CustomerGroups"])
-router.include_router(customers.external_router, tags=["ExternalCompanies"])
+router.include_router(v1_router)
 
 __all__ = ["router"]

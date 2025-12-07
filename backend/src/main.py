@@ -16,7 +16,6 @@ from src.intrastructure.cache.redis import close_redis, init_redis
 from src.intrastructure.database.mysql_external import external_mysql_db
 from src.intrastructure.database.postgres import postgres_db
 from src.presentation.api import router
-from src.presentation.api.v1 import router as api_v1_router
 from src.shared.config import settings
 from src.shared.logger import setup_logging
 from src.shared.logger.middlewares import RequestContextMiddleware
@@ -62,4 +61,3 @@ app.add_middleware(CORSHandleMiddleware)
 
 # 包含路由 - DDD 架构
 app.include_router(router)
-app.include_router(api_v1_router)
