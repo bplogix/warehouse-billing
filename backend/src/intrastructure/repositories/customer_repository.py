@@ -91,6 +91,8 @@ class CustomerRepository:
         await self._session.flush()
 
     async def list_group_members(self, group_id: int) -> list[CustomerGroupMember]:
-        stmt = select(CustomerGroupMember).where(CustomerGroupMember.group_id == group_id, CustomerGroupMember.is_deleted.is_(False))
+        stmt = select(CustomerGroupMember).where(
+            CustomerGroupMember.group_id == group_id, CustomerGroupMember.is_deleted.is_(False)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
