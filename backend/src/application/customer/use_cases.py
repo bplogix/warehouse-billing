@@ -58,7 +58,9 @@ class CreateCustomerUseCase:
         domain_guard = BusinessDomainGuard.from_context()
         import_service = CustomerImportService(domain_guard)
         allowed_domains = domain_guard.allowed_domains
-        business_domain = customer_cmd.business_domain or (allowed_domains[0] if allowed_domains else BusinessDomainGuard.DEFAULT_DOMAIN)
+        business_domain = customer_cmd.business_domain or (
+            allowed_domains[0] if allowed_domains else BusinessDomainGuard.DEFAULT_DOMAIN
+        )
 
         company_entity = CompanyEntity(
             company_id=company_cmd.company_code,

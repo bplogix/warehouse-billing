@@ -15,11 +15,11 @@ from src.application.customer.group_commands import (
 )
 from src.application.customer.use_cases import (
     CreateCustomerUseCase,
-    GetCustomerGroupDetailUseCase,
     GetCustomerDetailUseCase,
+    GetCustomerGroupDetailUseCase,
     ManageCustomerGroupUseCase,
-    QueryCustomersUseCase,
     QueryCustomerGroupsUseCase,
+    QueryCustomersUseCase,
     QueryExternalCompaniesUseCase,
     UpdateCustomerStatusUseCase,
 )
@@ -27,11 +27,11 @@ from src.domain.customer import CustomerStatus
 from src.presentation.dependencies.auth import get_current_user
 from src.presentation.dependencies.customer import (
     get_create_customer_use_case,
-    get_customer_group_detail_use_case,
     get_customer_detail_use_case,
+    get_customer_group_detail_use_case,
     get_manage_customer_group_use_case,
-    get_query_customers_use_case,
     get_query_customer_groups_use_case,
+    get_query_customers_use_case,
     get_query_external_companies_use_case,
     get_update_customer_status_use_case,
 )
@@ -39,9 +39,9 @@ from src.presentation.schema.customer import (
     CustomerCreateRequest,
     CustomerDetailResponse,
     CustomerGroupCreateSchema,
+    CustomerGroupListResponse,
     CustomerGroupMembersSchema,
     CustomerGroupResponse,
-    CustomerGroupListResponse,
     CustomerGroupWithMembersResponse,
     CustomerListResponse,
     CustomerResponse,
@@ -188,6 +188,7 @@ async def get_customer_group_detail(
         raise AppError(message="Customer group not found", code=status.HTTP_404_NOT_FOUND)
     resp = CustomerGroupWithMembersResponse.from_model(item.group).model_copy(update={"memberIds": item.member_ids})
     return SuccessResponse(data=resp)
+
 
 @external_router.get("", response_model=SuccessResponse[ExternalCompanyListResponse])
 async def list_external_companies(

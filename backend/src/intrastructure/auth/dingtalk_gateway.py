@@ -62,7 +62,7 @@ class RealDingTalkAuthGateway(DingTalkAuthGateway):
             # mobile=user_data.get("mobile"),
             # email=user_data.get("email"),
             # roles=user_data.role_list or user_data.roles or [],
-            roles=["WAREHOUSE"]
+            roles=["WAREHOUSE"],
             # departments=user_data.get("dept_id_list") or user_data.get("departments") or [],
         )
         logger.info("dingtalk user fetched", user_id=payload.user_id)

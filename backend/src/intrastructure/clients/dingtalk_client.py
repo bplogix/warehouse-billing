@@ -3,7 +3,6 @@ from __future__ import annotations
 from urllib.parse import urlencode
 
 import httpx
-from alibabacloud_dingtalk.contact_1_0.client import Client as ContactClient
 from alibabacloud_dingtalk.oauth2_1_0 import models as dingtalk_models
 from alibabacloud_dingtalk.oauth2_1_0.client import Client as DingTalkOAuthClient
 from alibabacloud_tea_openapi import models as open_api
@@ -182,7 +181,7 @@ class DingTalkClient:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 url,
-                params={"access_token": access_token['access_token']},
+                params={"access_token": access_token["access_token"]},
                 data={"unionid": union_id},
             )
         resp.raise_for_status()
