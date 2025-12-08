@@ -7,6 +7,7 @@ from src.intrastructure.clients.dingtalk_client import DingTalkClient, DingTalkC
 from src.shared.config import settings
 from src.shared.logger.factories import infra_logger
 from src.shared.schemas.auth import DingTalkUserPayload
+from src.shared.utils.random import generate_urlsafe_code
 
 logger = infra_logger.bind(component="dingtalk_gateway")
 
@@ -46,7 +47,7 @@ class RealDingTalkAuthGateway(DingTalkAuthGateway):
             raise DingTalkGatewayError("auth_code is required")
 
         try:
-            access_token = self._client.get_user_access_token(auth_code)
+            access_token = await self._client.get_user_access_token(auth_code)
             user_data = await self._client.get_user_info(access_token.access_token)
         except DingTalkClientError as exc:
             raise DingTalkGatewayError(str(exc)) from exc
@@ -85,4 +86,5 @@ class MockDingTalkAuthGateway(DingTalkAuthGateway):
         )
 
     def build_login_url(self, state: str, redirect_uri: str) -> str:
-        return f"{redirect_uri}?mock_state={state}"
+        code = generate_urlsafe_code()
+        return f"{redirect_uri}?state={state}&authCode={code}"

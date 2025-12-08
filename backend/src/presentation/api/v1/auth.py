@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 
 from src.application.auth.container import get_dingtalk_qr_login_service
-from src.application.auth.qr_login_service import (
-    DingTalkQrLoginService,
-    InvalidQrLoginStateTransitionError,
-    QrLoginStateNotFoundError,
-)
+from src.application.auth.qr_login_service import DingTalkQrLoginService, QrLoginStateNotFoundError
 from src.presentation.dependencies.auth import (
     authenticate_user_dependency,
     get_current_user,
@@ -69,15 +65,27 @@ async def get_dingtalk_qr_status(
     return DingTalkQrStatusResponse(status=state.status, authCode=state.auth_code, expireAt=state.expire_at)
 
 
+@router.get("/dingtalk/callback")
 @router.post("/dingtalk/callback")
 async def dingtalk_qr_callback(
-    payload: DingTalkCallbackPayload,
+    # GET 的来源：query
+    state: str | None = Query(None),
+    auth_code: str | None = Query(None, alias="authCode"),
+    # POST 的来源：body
+    payload: DingTalkCallbackPayload | None = Body(None),
     service: DingTalkQrLoginService = Depends(get_dingtalk_qr_login_service),
 ) -> dict[str, bool]:
+    # —— 自动融合逻辑 ——
+    # 优先 body，其次 query
+    merged_state = payload.state if payload else state
+    if merged_state is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="state is required")
+    payload = DingTalkCallbackPayload(
+        state=merged_state,
+        authCode=payload.auth_code if payload else auth_code,
+    )
     try:
-        await service.update_from_callback(payload.state, status=payload.status, auth_code=payload.auth_code)
+        await service.update_from_callback(payload.state, auth_code=payload.auth_code)
     except QrLoginStateNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="QR session not found") from None
-    except InvalidQrLoginStateTransitionError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {"ok": True}

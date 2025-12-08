@@ -72,13 +72,14 @@ class DingTalkQrLoginService:
         self,
         auth_state: str,
         *,
-        status: QRStatus,
         auth_code: str | None = None,
     ) -> QrLoginStatus:
         """根据钉钉回调更新状态."""
 
-        if status is QRStatus.CONFIRMED and not auth_code:
-            raise InvalidQrLoginStateTransitionError("confirmed state requires auth_code")
+        if auth_code is None:
+            status = QRStatus.SCANNED
+        else:
+            status = QRStatus.CONFIRMED
         try:
             record = await self._qr_state_repo.update(auth_state, status=status, auth_code=auth_code)
         except KeyError as exc:

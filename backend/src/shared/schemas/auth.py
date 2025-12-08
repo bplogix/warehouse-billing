@@ -148,7 +148,6 @@ class DingTalkCallbackPayload(BaseModel):
     """钉钉回调载荷."""
 
     state: str
-    status: QRStatus
     auth_code: str | None = Field(default=None, alias="authCode")
 
     model_config = {
