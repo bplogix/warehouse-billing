@@ -14,12 +14,17 @@ import NotFound from '@/views/NotFound'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Desktop from '@/components/layouts/Desktop'
 import DevLogin from '@/modules/auth/Dev'
+import DingTalkQrLogin from '@/modules/auth/DingTalkQrLogin'
 import DemoPage from '@/modules/demo/Default'
 
 export const routeConfig: RouteObject[] = [
   {
     path: '/auth',
     element: <DevLogin />,
+  },
+  {
+    path: '/login/dingtalk',
+    element: <DingTalkQrLogin />,
   },
   {
     path: '/',

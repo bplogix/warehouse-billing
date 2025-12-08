@@ -33,6 +33,7 @@ interface AuthActions {
     refreshToken: string,
     user: UserInfo,
     permissions?: string[],
+    loginType?: AuthState['loginType'],
   ) => void
   setUser: (user: UserInfo) => void
   setLoginType: (type: 'enterprise' | 'qrcode' | null) => void
@@ -45,16 +46,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     (set, get) => ({
       ...initialState,
 
-      setAuth: (token, refreshToken, user, permissions) => {
+      setAuth: (token, refreshToken, user, permissions, loginType) => {
         set({
           isAuthenticated: true,
-          ...{
+          token: {
             accessToken: token,
             refreshToken,
           },
           user,
-          permissions,
+          permissions: permissions ?? [],
           loading: false,
+          loginType: loginType ?? null,
         })
       },
 

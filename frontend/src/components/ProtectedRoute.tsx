@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />
+    return <Navigate to="/login/dingtalk" state={{ from: location }} replace />
   }
 
   return <>{children}</>

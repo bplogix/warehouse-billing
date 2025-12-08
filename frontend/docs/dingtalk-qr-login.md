@@ -26,12 +26,12 @@ src/modules/auth/pages/DingTalkQrLogin.tsx
 
 ## 3. 交互流程
 
-1. 进入页面，请求后端 `POST /api/v1/auth/dingtalk/qr` 拿到 `loginUrl`、`qrId`、`expireAt`。
+1. 进入页面，请求后端 `POST /api/v1/auth/dingtalk/qr` 拿到 `authState`、`loginUrl`、`expireAt`。
 2. 使用 `qrcode`（或同类库）将 `loginUrl` 转成二维码，并启动倒计时。
-3. 每 2 秒轮询 `GET /api/v1/auth/dingtalk/qr/{qrId}/status`：
+3. 每 2 秒轮询 `GET /api/v1/auth/dingtalk/qr/{authState}/status`：
    - `waiting`：继续展示二维码。
    - `scanned`：展示“已扫描，等待确认”提示。
-   - `confirmed`：后端返回 `authCode`，立即调用 `POST /api/auth/dingtalk/callback` 兑换 access token，写入 zustand auth store，跳转 `/dashboard`.
+   - `confirmed`：后端返回 `authCode`，立即调用 `POST /api/v1/auth/dingtalk/callback` 兑换 access token，写入 zustand auth store，跳转 `/dashboard`。
    - `expired`：关闭轮询，展示过期状态与「刷新二维码」按钮。
 4. 手动刷新：销毁旧轮询，重新走步骤 1。
 
@@ -42,13 +42,14 @@ src/modules/auth/pages/DingTalkQrLogin.tsx
 - 全局认证：继续复用 `useAuthStore`，在确认成功后存入 user/token。
 - 错误处理：所有 API 错误走 `useToast`（sonner）提示，并落日志。
 
-## 5. API 契约（草案）
+## 5. API 契约（结合后端 OpenAPI 0.1.0）
 
 | 接口 | 方法 | 入参 | 响应 | 备注 |
 | --- | --- | --- | --- | --- |
-| `/api/v1/auth/dingtalk/qr` | `POST` | `{ clientType: 'pc' }` | `{ qrId: string; loginUrl: string; expireAt: string; }` | 返回一次性 URL，前端本地生成二维码，**待后端实现** |
-| `/api/v1/auth/dingtalk/qr/{qrId}/status` | `GET` | `qrId` path | `{ status: 'waiting' \| 'scanned' \| 'confirmed' \| 'expired'; authCode?: string; }` | `authCode` 仅在 `confirmed` 返回，**待后端实现** |
-| `/api/v1/auth/dingtalk/login` | `POST` | `{ authCode: string }` | `{ user: CurrentUser; tokens: TokenPair }` | 现有接口，扫码确认后调用 |
+| `/api/v1/auth/dingtalk/qr` | `POST` | `{ clientType: 'pc' }`（const，默认 pc） | `201 { authState: string; loginUrl: string; expireAt: string (ISO); }` | 服务端返回已生成的登录 URL 与状态标识，`expireAt` 为二维码过期时间 |
+| `/api/v1/auth/dingtalk/qr/{authState}/status` | `GET` | `authState` path | `{ status: 'waiting' \| 'scanned' \| 'confirmed' \| 'expired'; authCode?: string; expireAt: string; }` | 轮询用；`authCode` 仅在 `confirmed` 返回 |
+| `/api/v1/auth/dingtalk/callback` | `POST` | `{ state: string; status: QRStatus; authCode?: string; }` | `{ [key: string]: boolean }` | 扫码确认后由后端/钉钉回调触发，前端可在确认状态拿到 `authCode` 后主动调用 |
+| `/api/v1/auth/dingtalk/login` | `POST` | `{ authCode: string }` | `{ user: CurrentUser; tokens: TokenPair }` | 前端拿到 `authCode` 后调用，获取 access/refresh token 与用户信息 |
 
 安全注意：所有请求带上 CSRF header，必要时校验 Referer；回调接口需校验 authCode 一次性。
 

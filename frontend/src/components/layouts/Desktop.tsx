@@ -14,9 +14,12 @@ import {
   ReceiptText,
   Settings,
   Users,
+  LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+
+import { useAuthStore } from '@/stores/useAuth'
 
 const navItems = [
   {
@@ -101,9 +104,15 @@ const DesktopLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { clearAuth } = useAuthStore()
 
   const handleDrawerToggle = () => {
     setMobileOpen((prev) => !prev)
+  }
+
+  const handleLogout = () => {
+    clearAuth()
+    navigate('/login/dingtalk')
   }
 
   const activePrimary =
@@ -311,6 +320,17 @@ const DesktopLayout = () => {
                 )
               })}
             </nav>
+            <div className="flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleLogout}
+                aria-label="退出登录"
+                title="退出登录"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </header>
 

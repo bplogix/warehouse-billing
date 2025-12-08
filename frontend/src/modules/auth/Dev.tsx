@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/display/badge'
 import { Button } from '@/components/ui/form-controls/button'
 import { Card, CardContent } from '@/components/ui/display/card'
 import type { FC } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuthStore } from '@/stores/useAuth'
@@ -70,8 +70,14 @@ const roles: Role[] = [
 const AuthDev: FC = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { setAuth } = useAuthStore()
+  const { setAuth, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/')
+    }
+  }, [isAuthenticated, navigate])
 
   const handleLogin = async (role: Role) => {
     setIsLoading(true)
@@ -95,6 +101,7 @@ const AuthDev: FC = () => {
       `mock_refresh_token_${role.id}`,
       mockUser,
       role.permissions,
+      'enterprise',
     )
 
     setIsLoading(false)
