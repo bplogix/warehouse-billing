@@ -5,7 +5,7 @@
 ## 1. 目标与范围
 - 提供计费模板 CRUD、状态切换、列表/详情查询接口，契合前端 tab（GLOBAL/GROUP/CUSTOMER）。
 - 模板规则包含收费项、计价方式、阶梯价等结构化字段。
-- 支持客户/分组关联过滤；对 CUSTOMER 模板在生效时生成报价单快照（见 §4）。
+- 支持客户/分组关联过滤；对 CUSTOMER 模板在生效时生成报价单快照（见 §5）。
 - 保证模板/报价单的版本与并发一致性（乐观锁）。
 
 ## 2. 领域模型
@@ -16,21 +16,56 @@
 
 > 业务域控制：沿用 `CurrentUser.domain_codes` 进行过滤/校验。
 
-## 3. API 契约（后端建议）
+## 3. Template 与 TemplateRule 结构
+
+### Template（列表/详情返回）
+- `id`: bigint（主键）。
+- `templateType`: `GLOBAL | GROUP | CUSTOMER`，前端 tab 必传，一致性由后端校验。
+- `templateCode`: varchar（唯一）。
+- `templateName`: string。
+- `description`: string。
+- `effectiveDate`: ISO 格式时间戳。
+- `expireDate`: ISO 或 `null`，空值表示长期有效。
+- `version`: int（乐观锁与变更计数）。
+- `rules`: `TemplateRule[]`。
+- `customerGroupIds?`: `number[]`（仅 `GROUP`）。
+- `customerId?`: `number`（仅 `CUSTOMER`）。
+
+### TemplateRule（规则结构）
+- `chargeCode`: string（如 `STORAGE_FEE`）。
+- `chargeName`: string。
+- `category`: `STORAGE | INBOUND_OUTBOUND | TRANSPORT | RETURN | MATERIAL | MANUAL`。
+- `channel`: `AUTO | SCAN | MANUAL`。
+- `unit`: `PIECE | PALLET | ORDER | CBM_DAY | CBM_MONTH | KG_DAY | KG_MONTH`。
+- `pricingMode`: `FLAT` 或 `TIERED`。
+- `price?`: number | null（简单模式价格，可为空用于 `supportOnly` 的规则）。
+- `tiers?`: `[{ minValue, maxValue | null, price, description? }]`（支持阶梯）。
+- `description?`: string。
+- `supportOnly?`: boolean（`TRANSPORT`/`MANUAL` 只用于标记支持状态，前端据此隐藏价格编辑）。
+
+> 计价约束：`STORAGE` 可选 `FLAT/TIERED`；`INBOUND_OUTBOUND`/`RETURN`/`MATERIAL` 仅 `FLAT`；`TRANSPORT` 与 `MANUAL` 仅 `supportOnly=true`，`price=null`，前端只展示可否支持的开关。
+
+### Template Create/Update Payload
+- 基本与 `Template` 保持一致，更新时可省略不可变字段（如 `templateType`/`templateCode`）。
+- `customerGroupIds` 仅 `GROUP`，`customerId` 仅 `CUSTOMER`；`GLOBAL` 类型限定最多 1 条。
+- URL 中的 ID 与 `version` 必传，用于乐观锁校验。
+- `rules` 列表在保存前必须完成参数校验（枚举、阶梯区间、价格或 `supportOnly` 标记等）。
+
+## 4. API 契约（后端建议）
 与前端文档对齐，补充后端约束：
 
 | 功能 | 方法 | 路径 | 说明 |
 | --- | --- | --- | --- |
-| 列表模板 | GET `/api/v1/billing/templates` | 支持 `templateType/keyword/status/customerId/customerGroupId/limit/offset`，按业务域过滤 |
-| 获取详情 | GET `/api/v1/billing/templates/{id}` | 返回模板 + 规则 |
-| 新增模板 | POST `/api/v1/billing/templates` | `templateType` 必填；`customerId` 仅 CUSTOMER，`customerGroupIds` 仅 GROUP；`templateCode` 唯一 |
-| 更新模板 | PUT `/api/v1/billing/templates/{id}` | 禁止修改 `templateType/templateCode`；乐观锁校验 `version` |
-| 删除模板 | DELETE `/api/v1/billing/templates/{id}` | 软删；若已关联报价单则阻断或转为失效 |
-| 启用/停用 | PATCH `/api/v1/billing/templates/{id}/status` | 状态流转：`DRAFT -> ACTIVE/INACTIVE`，`ACTIVE -> INACTIVE`；切换到 `ACTIVE` 时触发报价单快照（见 §4） |
-| 列表报价单 | GET `/api/v1/billing/quotes` | 支持按 `customerId/customerGroupId/templateId/status` 过滤 |
-| 获取报价单 | GET `/api/v1/billing/quotes/{id}` | 返回已快照的规则 |
+| 列表模板 | GET `/api/v1/billing/templates` | `templateType` 必传，支持 `keyword/customerId/customerGroupId/status/limit/offset`，返回 `items: Template[]` 与 `total`；按业务域过滤 |
+| 获取详情 | GET `/api/v1/billing/templates/{id}` | 返回 `Template`（含 `rules`、`version`、关联客户/分组） |
+| 新增模板 | POST `/api/v1/billing/templates` | 传入 `Template` 结构；`templateType`/`templateCode` 必填、`customerId` 仅 CUSTOMER、`customerGroupIds` 仅 GROUP，`templateCode` 唯一 |
+| 更新模板 | PUT `/api/v1/billing/templates/{id}` | 禁止修改 `templateType/templateCode`；必须携带 `version`，`rules` 全量替换；根据 `scope` 生成新的报价单 |
+| 删除模板 | DELETE `/api/v1/billing/templates/{id}` | 软删并返回 204；若有关联报价单可阻断/转为失效或保留历史 |
+| 启用/停用 | PATCH `/api/v1/billing/templates/{id}/status` | 状态流转：`DRAFT -> ACTIVE/INACTIVE`，`ACTIVE -> INACTIVE`；切换到 `ACTIVE` 时触发报价单快照（见 §5） |
+| 列表报价单 | GET `/api/v1/billing/quotes` | 支持按 `templateId/customerId/customerGroupId/status` 过滤 |
+| 获取报价单 | GET `/api/v1/billing/quotes/{id}` | 返回已快照的规则与 `payload` 元信息 |
 
-## 4. 版本与报价单策略（回答「是否保存时为每个客户生成报价单并放版本」）
+## 5. 版本与报价单策略（回答「是否保存时为每个客户生成报价单并放版本」）
 - **模板主版本**：`BillingTemplate.version` 用于乐观锁与模板迭代。
 - **报价单快照**（推荐）：在模板进入 `ACTIVE` 时为目标客户/分组生成 `Quote` 记录，写入 `templateVersion` 与规则快照，避免后续模板编辑影响已生效计费。
   - CUSTOMER 模板：单客户生成 1 条报价单。
@@ -43,14 +78,14 @@
 
 此设计比“仅模板版本字段”更稳健：避免模板编辑覆盖已生效计费，且支持按客户留存历史版本。
 
-## 5. 状态与校验
+## 6. 状态与校验
 - 模板状态机：`DRAFT` → `ACTIVE` → `INACTIVE`；禁止直接从 `INACTIVE` 回到 `ACTIVE`，需复制/新建。
 - 生效期校验：`effectiveDate <= expireDate`；`expireDate` 可为空（长期有效）。
 - 唯一性：`templateCode` 全局唯一；GLOBAL 类型限制单条（后端阻断）。
 - 业务域：查询与写入时校验 `BusinessDomainGuard`，按域过滤列表。
 - 并发：更新/状态切换需携带 `version`；返回 409 时提示前端重拉。
 
-## 6. 数据层与事务
+## 7. 数据层与事务
 - ER 图：
 
 ```mermaid
@@ -149,7 +184,7 @@ erDiagram
 - SQLAlchemy 模型可继承现有 `AuditMixin`/`Base`，枚举类型与字符串常量在 `domain.billing` 定义；`customer_group_ids` 推荐 gin 索引以支持包含查询。
 - 事务：模板及规则增改在同一事务；启用时生成报价单与状态更新同事务提交。
 
-## 7. 对接与测试要点
+## 8. 对接与测试要点
 - 列表/详情返回字段与前端文档一致，增加 `trace_id` header。
 - 状态切换时返回最新 `version`。
 - 报价单接口用于计费侧消费，需验证快照内容与模板一致。
@@ -173,7 +208,7 @@ erDiagram
   其中 `group_id` 在请求前一次性获取（客户只隶属单个组），查询返回的第一条即为当前生效报价，可据此判断来自独立、组或全局模板。
 - 覆盖用例：模板创建/更新/启用/停用、乐观锁冲突、报价单生成与查询、业务域过滤、GLOBAL 唯一性。
 
-## 8. 后续可选
+## 9. 后续可选
 - 审核流：在模板/报价单上增加 `REVIEWING` 状态与审批接口。
 - 历史版本：`GET /billing/templates/{id}/versions`，或直接查询关联报价单历史。
 - 收费项元数据：提供 `/billing/charges` 返回可选收费项定义。
