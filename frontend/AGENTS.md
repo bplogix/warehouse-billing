@@ -66,5 +66,6 @@ eslint.config.js     # ESLint 规则
 - 运行 `pnpm check-types` 与 `pnpm lint` 均设为阻断（`--max-warnings=0`），请在提交前确保通过。
 
 ## 开发文档
+
 - 所有生成的文档按照功能命名
 - 文档保存路径 `docs/*`

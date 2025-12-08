@@ -44,12 +44,12 @@ src/modules/auth/pages/DingTalkQrLogin.tsx
 
 ## 5. API 契约（结合后端 OpenAPI 0.1.0）
 
-| 接口 | 方法 | 入参 | 响应 | 备注 |
-| --- | --- | --- | --- | --- |
-| `/api/v1/auth/dingtalk/qr` | `POST` | `{ clientType: 'pc' }`（const，默认 pc） | `201 { authState: string; loginUrl: string; expireAt: string (ISO); }` | 服务端返回已生成的登录 URL 与状态标识，`expireAt` 为二维码过期时间 |
-| `/api/v1/auth/dingtalk/qr/{authState}/status` | `GET` | `authState` path | `{ status: 'waiting' \| 'scanned' \| 'confirmed' \| 'expired'; authCode?: string; expireAt: string; }` | 轮询用；`authCode` 仅在 `confirmed` 返回 |
-| `/api/v1/auth/dingtalk/callback` | `POST` | `{ state: string; status: QRStatus; authCode?: string; }` | `{ [key: string]: boolean }` | 扫码确认后由后端/钉钉回调触发，前端可在确认状态拿到 `authCode` 后主动调用 |
-| `/api/v1/auth/dingtalk/login` | `POST` | `{ authCode: string }` | `{ user: CurrentUser; tokens: TokenPair }` | 前端拿到 `authCode` 后调用，获取 access/refresh token 与用户信息 |
+| 接口                                          | 方法   | 入参                                                      | 响应                                                                                                   | 备注                                                                      |
+| --------------------------------------------- | ------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `/api/v1/auth/dingtalk/qr`                    | `POST` | `{ clientType: 'pc' }`（const，默认 pc）                  | `201 { authState: string; loginUrl: string; expireAt: string (ISO); }`                                 | 服务端返回已生成的登录 URL 与状态标识，`expireAt` 为二维码过期时间        |
+| `/api/v1/auth/dingtalk/qr/{authState}/status` | `GET`  | `authState` path                                          | `{ status: 'waiting' \| 'scanned' \| 'confirmed' \| 'expired'; authCode?: string; expireAt: string; }` | 轮询用；`authCode` 仅在 `confirmed` 返回                                  |
+| `/api/v1/auth/dingtalk/callback`              | `POST` | `{ state: string; status: QRStatus; authCode?: string; }` | `{ [key: string]: boolean }`                                                                           | 扫码确认后由后端/钉钉回调触发，前端可在确认状态拿到 `authCode` 后主动调用 |
+| `/api/v1/auth/dingtalk/login`                 | `POST` | `{ authCode: string }`                                    | `{ user: CurrentUser; tokens: TokenPair }`                                                             | 前端拿到 `authCode` 后调用，获取 access/refresh token 与用户信息          |
 
 安全注意：所有请求带上 CSRF header，必要时校验 Referer；回调接口需校验 authCode 一次性。
 
@@ -86,11 +86,11 @@ src/modules/auth/pages/DingTalkQrLogin.tsx
 
 ## 9. 时间预估
 
-| 事项 | 预估 |
-| --- | --- |
+| 事项               | 预估   |
+| ------------------ | ------ |
 | 页面与状态逻辑开发 | 1.5 天 |
-| 接入后端联调 | 0.5 天 |
-| QA + 文档 | 0.5 天 |
+| 接入后端联调       | 0.5 天 |
+| QA + 文档          | 0.5 天 |
 
 ## 10. 后续迭代方向
 

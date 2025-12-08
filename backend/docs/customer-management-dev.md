@@ -32,6 +32,7 @@
 - Pydantic Schemas：
   - `CustomerCreateSchema`、`CustomerUpdateSchema`、`CustomerQuerySchema`
   - `CustomerGroupCreateSchema`、`CustomerGroupMemberSchema`
+  - `CustomerGroupListResponse`（含成员 ID）、`CustomerGroupWithMembersResponse`
   - `ExternalSyncQuerySchema`
 - 验证层仅做字段校验，调用 Application 用例，禁止直接访问数据库；`CurrentUser` 信息通过依赖传入并写入审计字段。
 
@@ -42,7 +43,9 @@
   2. `UpdateCustomerStatusUseCase`：校验枚举、写入操作人信息并触发领域事件。
   3. `QueryCustomerUseCase`：组合 `businessDomain`、`source` 条件，分页返回。
   4. `ManageCustomerGroupUseCase`：维护 `CustomerGroup` 及 `CustomerGroupMember`，处理多对多同步。
-  5. `RecordExternalSyncUseCase`：记录同步结果，供外部可观测性。
+  5. `QueryCustomerGroupsUseCase`：按业务域过滤分组列表，返回成员 ID。
+  6. `GetCustomerGroupDetailUseCase`：查询单个分组（含成员），校验业务域。
+  7. `RecordExternalSyncUseCase`：记录同步结果，供外部可观测性。
 - 所有用例都需要注入 `BusinessDomainGuard`，根据 `CurrentUser.domain_codes` 做域过滤或拒绝访问，并在成功路径中把 `trace_id` 写入日志；`BusinessDomainGuard` 仅依赖 `DingTalkRoleMappingGateway` 提供域列表。
 - 依赖注入 Infra 仓储接口（`CustomerRepository` 等），组合 Domain 实体完成业务编排。
 
@@ -54,7 +57,7 @@
   - `CustomerGroup`：维护 `maxMember`、`businessDomain` 的约束。
 - 领域服务：
   - `CustomerImportService`：将外部 payload 规范化为聚合根，供 Application 调度。
-  - `BusinessDomainGuard`：校验当前用户可访问域，依赖共享上下文。
+  - `BusinessDomainGuard`：校验当前用户可访问域，依赖共享上下文。域名大小写不敏感；上下文缺失时默认允许 `WAREHOUSE`。
 
 ### Infrastructure（`src/infrastructure/customer`）
 
@@ -76,7 +79,9 @@
 | `GET` | `/customers/{id}` | `QueryCustomerUseCase` | 返回客户详情（含公司、分组信息） |
 | `PATCH` | `/customers/{id}/status` | `UpdateCustomerStatusUseCase` | 更新 `status`、`operationName/Uid` |
 | `POST` | `/customer-groups` | `ManageCustomerGroupUseCase` | 创建分组并返回 `id` |
-| `PUT` | `/customer-groups/{id}/members` | `ManageCustomerGroupUseCase` | 批量替换分组成员 |
+| `PUT` | `/customer-groups/{id}/members` | `ManageCustomerGroupUseCase` | 批量替换分组成员（事务在用例层统一管理） |
+| `GET` | `/customer-groups` | `QueryCustomerGroupsUseCase` | 按业务域返回分组列表及成员 ID |
+| `GET` | `/customer-groups/{id}` | `GetCustomerGroupDetailUseCase` | 获取单个分组详情（含成员 ID），做业务域校验 |
 | `GET` | `/external-sync` | `RecordExternalSyncUseCase`（查询） | 根据 `entityType`、`entityId` 或 `remoteId` 查询同步记录 |
 
 响应示例应包含 `trace_id` header，与 `shared/logger` 统一格式对齐。
@@ -91,7 +96,11 @@
 2. `ManageCustomerGroupUseCase`：
    - 维护 `CustomerGroupMember` 表，写入前根据 `Customer.businessDomain` 校验一致性。
    - 执行批量替换时使用 `DELETE + INSERT`，并在 SQL 层添加 `idx_group_member_customer`。
-3. 查询接口一律强制 `businessDomain` 过滤，避免跨域泄露。
+   - 事务统一在用例层开启（防止 AsyncSession autobegin 后再次 begin 抛错），仓储层不再管理事务。
+3. `QueryCustomerGroupsUseCase` / `GetCustomerGroupDetailUseCase`：
+   - 必须按业务域过滤，使用小写对比避免大小写差异导致空结果。
+   - 返回成员 ID 列表，预加载成员避免 N+1。
+4. 查询接口一律强制 `businessDomain` 过滤，避免跨域泄露。
 
 ## 同步与审计
 

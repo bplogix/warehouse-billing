@@ -9,7 +9,7 @@
 
 1. `POST /api/v1/auth/dingtalk/qr` 生成一次性 `auth_state`，使用配置项 `DINGTALK_QR_REDIRECT_URI` 拼装钉钉 OAuth 参数（`response_type=code`、`client_id=settings.dingtalk_app_key`、`redirect_uri=settings.dingtalk_qr_redirect_uri`、`scope=openid`、`prompt=consent`、`state=auth_state`），通过 `urlencode` 得到 `loginUrl` 返回前端，并将 `auth_state` 与状态（waiting）写入 Redis（含过期时间）。
 2. 前端渲染二维码并开始轮询 `GET /api/v1/auth/dingtalk/qr/{authState}/status`。
-3. 当用户用钉钉 APP 扫码并确认后，钉钉回调后端接口，后端校验 `state`、生成一次性 `authCode`，更新 Redis 中 `auth_state` 状态为 `confirmed` 并写入 `authCode`。
+3. 当用户用钉钉 APP 扫码并确认后，钉钉回调后端接口，后端校验 `state`，根据是否携带 `authCode` 决定状态：无 `authCode` 记为 `scanned`，有 `authCode` 记为 `confirmed`，并写入 Redis。
 4. 前端轮询读到 `confirmed` 状态时，调用现有 `POST /api/v1/auth/dingtalk/login` 携带 `authCode` 换取系统内的 token；本地系统不维护用户主体，后端将使用钉钉回调带来的 `authCode` 去换取钉钉用户信息并直接生成登录态。
 5. 若 `auth_state` 超时或用户刷新二维码，后端需要清理旧状态并生成新的 `auth_state`。
 
@@ -51,7 +51,7 @@ sequenceDiagram
 | --- | --- | --- | --- | --- |
 | `/api/v1/auth/dingtalk/qr` | `POST` | `{ clientType: 'pc' }` | `{ authState: string, loginUrl: string, expireAt: string }` | 生成一次性二维码 URL，写入 Redis；首期仅支持 PC |
 | `/api/v1/auth/dingtalk/qr/{authState}/status` | `GET` | path `authState` | `{ status: 'waiting'\|'scanned'\|'confirmed'\|'expired', authCode?: string }` | 读取 Redis 状态；`authCode` 仅在 confirmed 返回 |
-| `/api/v1/auth/dingtalk/callback` | `POST` | `{ state: string, status: 'scanned'\|'confirmed', authCode?: string }` | `{ ok: true }` | 钉钉服务端回调入口（必须实现），更新 Redis 中状态及 `authCode` |
+| `/api/v1/auth/dingtalk/callback` | `POST` | `{ state: string, authCode?: string }` | `{ ok: true }` | 钉钉服务端回调入口（必须实现），根据是否携带 `authCode` 自动判定状态（scanned/confirmed），更新 Redis 中状态及 `authCode` |
 | `/api/v1/auth/dingtalk/login` | `POST` | `{ authCode: string }` | `{ user: CurrentUser, tokens: TokenPair }` | 调用钉钉开放平台换取用户信息并直接生成登录态，`authCode` 仅使用一次，响应以 JSON 返回 |
 
 安全要求：
@@ -64,7 +64,7 @@ sequenceDiagram
 ## 5. 回归 Checklist（后端视角）
 
 1. `POST /auth/dingtalk/qr` 能生成唯一 `auth_state` 且 Redis 写入成功，`loginUrl` 可用于钉钉扫码。
-2. 钉钉回调接口可正确解析参数，更新 Redis 状态及 `authCode`。
+2. 钉钉回调接口：body/query 至少包含 `state`，`authCode` 可选，能够正确更新 Redis 状态；未传 `authCode` 时状态应为 `scanned`，传入则为 `confirmed`。
 3. `GET /auth/dingtalk/qr/{authState}/status` 在不同状态下返回符合契约的数据。
 4. `/auth/dingtalk/login` 校验 `authCode` 并完成登录；重复使用同一个 `authCode` 会返回错误。（TODO：补充校验逻辑与 Redis 状态删除策略）
 5. Redis 里的临时数据在过期后自动清除。

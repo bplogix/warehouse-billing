@@ -6,14 +6,14 @@
 
 ## 实体概览
 
-| 实体 | 说明 | 主键 | 关键字段 |
-| --- | --- | --- | --- |
-| `Customer` | 仓储计费系统内的客户档案 | `id` | `customerName`、`customerCode`、`status`、`companyId` |
-| `Company` | 主体公司信息，既可由 RB 导入也支持自建 | `companyId` | `companyName`、`companyCode`、`source` |
-| `CustomerGroup` | CRM 分组，用于圈选客户、控制运营流程 | `id` | `name`、`businessDomain` |
-| `CustomerGroupMember` | 客户与分组的多对多关联表 | 复合键 (`groupId`,`customerId`) | `groupId`、`customerId` |
-| `BusinessDomain` | 定义普通仓、保税仓等业务域 | `code` | `name`、`description` |
-| `ExternalSystemSync` | 记录来自各来源的数据映射 | `id` | `source`、`entityType`、`remoteId` |
+| 实体                  | 说明                                   | 主键                            | 关键字段                                              |
+| --------------------- | -------------------------------------- | ------------------------------- | ----------------------------------------------------- |
+| `Customer`            | 仓储计费系统内的客户档案               | `id`                            | `customerName`、`customerCode`、`status`、`companyId` |
+| `Company`             | 主体公司信息，既可由 RB 导入也支持自建 | `companyId`                     | `companyName`、`companyCode`、`source`                |
+| `CustomerGroup`       | CRM 分组，用于圈选客户、控制运营流程   | `id`                            | `name`、`businessDomain`                              |
+| `CustomerGroupMember` | 客户与分组的多对多关联表               | 复合键 (`groupId`,`customerId`) | `groupId`、`customerId`                               |
+| `BusinessDomain`      | 定义普通仓、保税仓等业务域             | `code`                          | `name`、`description`                                 |
+| `ExternalSystemSync`  | 记录来自各来源的数据映射               | `id`                            | `source`、`entityType`、`remoteId`                    |
 
 > 说明：代码中 `CustomerGroup` 结构包含 `customerIds` 数组，数据库实现应转化为独立的关联表 `CustomerGroupMember` 以保持范式。
 
@@ -21,82 +21,82 @@
 
 ### `Customer`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `id` | `bigint` | PK，自增 | 系统内部客户主键 |
-| `customerName` | `varchar(128)` | NN | 展示名称 |
-| `customerCode` | `varchar(64)` | NN，唯一 | 业务编码，前端用于检索 |
-| `address` | `varchar(256)` | NN | 客户地址 |
-| `contactEmail` | `varchar(128)` | NN | 联系人邮箱 |
-| `contactPerson` | `varchar(64)` | NN | 联系人姓名 |
-| `operationName` | `varchar(64)` | NN | 最近操作人 |
-| `operationUid` | `varchar(64)` | NN | 最近操作人 UID |
-| `status` | `enum('ACTIVE','INACTIVE')` | NN | 客户状态 |
-| `companyId` | `varchar(64)` | FK -> `Company.companyId` | 关联主体公司，导入流程与客户记录同事务写入 |
-| `businessDomain` | `varchar(64)` | FK -> `BusinessDomain.code` | 业务域，如普通仓/保税仓 |
-| `source` | `varchar(32)` | NN | 数据来源（如 `RB`、`AB`、`SB`、`INTERNAL`、`PARTNER` 等） |
-| `sourceRefId` | `varchar(128)` | 可空 | 外部系统主键/标识（如 RB/AB/SB 的 `company_id`） |
-| `bondedLicenseNo` | `varchar(64)` | 可空 | 保税客户许可编号 |
-| `customsCode` | `varchar(64)` | 可空 | 客户海关编码 |
+| 字段              | 类型                        | 约束                        | 说明                                                      |
+| ----------------- | --------------------------- | --------------------------- | --------------------------------------------------------- |
+| `id`              | `bigint`                    | PK，自增                    | 系统内部客户主键                                          |
+| `customerName`    | `varchar(128)`              | NN                          | 展示名称                                                  |
+| `customerCode`    | `varchar(64)`               | NN，唯一                    | 业务编码，前端用于检索                                    |
+| `address`         | `varchar(256)`              | NN                          | 客户地址                                                  |
+| `contactEmail`    | `varchar(128)`              | NN                          | 联系人邮箱                                                |
+| `contactPerson`   | `varchar(64)`               | NN                          | 联系人姓名                                                |
+| `operationName`   | `varchar(64)`               | NN                          | 最近操作人                                                |
+| `operationUid`    | `varchar(64)`               | NN                          | 最近操作人 UID                                            |
+| `status`          | `enum('ACTIVE','INACTIVE')` | NN                          | 客户状态                                                  |
+| `companyId`       | `varchar(64)`               | FK -> `Company.companyId`   | 关联主体公司，导入流程与客户记录同事务写入                |
+| `businessDomain`  | `varchar(64)`               | FK -> `BusinessDomain.code` | 业务域，如普通仓/保税仓                                   |
+| `source`          | `varchar(32)`               | NN                          | 数据来源（如 `RB`、`AB`、`SB`、`INTERNAL`、`PARTNER` 等） |
+| `sourceRefId`     | `varchar(128)`              | 可空                        | 外部系统主键/标识（如 RB/AB/SB 的 `company_id`）          |
+| `bondedLicenseNo` | `varchar(64)`               | 可空                        | 保税客户许可编号                                          |
+| `customsCode`     | `varchar(64)`               | 可空                        | 客户海关编码                                              |
 
 ### `Company`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `companyId` | `varchar(64)` | PK | 系统内部主键，由平台生成；来自外部平台的记录仍需生成新的 `companyId` |
-| `companyName` | `varchar(128)` | NN | 公司名称 |
-| `companyCode` | `varchar(64)` | NN，唯一 | 对外编码 |
-| `companyCorporation` | `varchar(64)` | NN | 法人代表 |
-| `companyPhone` | `varchar(32)` | NN | 联系电话 |
-| `companyEmail` | `varchar(128)` | NN | 联系邮箱 |
-| `companyAddress` | `varchar(256)` | NN | 公司地址 |
-| `source` | `varchar(32)` | NN | 数据来源（`RB`、`AB`、`SB`、`INTERNAL` 等） |
-| `sourceRefId` | `varchar(128)` | 可空 | 外部系统主键/标识，用于与 `companyId` 建立映射 |
-| `createdViaImport` | `boolean` | 默认 false | 标记是否由外部导入流程生成 |
+| 字段                 | 类型           | 约束       | 说明                                                                 |
+| -------------------- | -------------- | ---------- | -------------------------------------------------------------------- |
+| `companyId`          | `varchar(64)`  | PK         | 系统内部主键，由平台生成；来自外部平台的记录仍需生成新的 `companyId` |
+| `companyName`        | `varchar(128)` | NN         | 公司名称                                                             |
+| `companyCode`        | `varchar(64)`  | NN，唯一   | 对外编码                                                             |
+| `companyCorporation` | `varchar(64)`  | NN         | 法人代表                                                             |
+| `companyPhone`       | `varchar(32)`  | NN         | 联系电话                                                             |
+| `companyEmail`       | `varchar(128)` | NN         | 联系邮箱                                                             |
+| `companyAddress`     | `varchar(256)` | NN         | 公司地址                                                             |
+| `source`             | `varchar(32)`  | NN         | 数据来源（`RB`、`AB`、`SB`、`INTERNAL` 等）                          |
+| `sourceRefId`        | `varchar(128)` | 可空       | 外部系统主键/标识，用于与 `companyId` 建立映射                       |
+| `createdViaImport`   | `boolean`      | 默认 false | 标记是否由外部导入流程生成                                           |
 
 > 公司实体既可以在 UI 中自建（`source=INTERNAL`），也可以由 RB/合作方导入；无论来源如何，客户在创建时都需要引用一个有效的 `companyId`。RB 导入场景下，需要先根据 `companyCode`/`sourceRefId` upsert `Company`，再在同一事务内写入 `Customer`，保证公司与客户同步落库。
 
 ### `CustomerGroup`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `id` | `bigint` | PK，自增 | 分组主键 |
-| `name` | `varchar(64)` | NN，唯一 | 分组名称 |
-| `description` | `varchar(256)` | 可空 | 描述 |
-| `createdAt` | `timestamp` | 默认当前 | 创建时间 |
-| `updatedAt` | `timestamp` | 自动更新 | 最近修改时间 |
-| `businessDomain` | `varchar(64)` | FK -> `BusinessDomain.code` | 所属业务域 |
+| 字段             | 类型           | 约束                        | 说明         |
+| ---------------- | -------------- | --------------------------- | ------------ |
+| `id`             | `bigint`       | PK，自增                    | 分组主键     |
+| `name`           | `varchar(64)`  | NN，唯一                    | 分组名称     |
+| `description`    | `varchar(256)` | 可空                        | 描述         |
+| `createdAt`      | `timestamp`    | 默认当前                    | 创建时间     |
+| `updatedAt`      | `timestamp`    | 自动更新                    | 最近修改时间 |
+| `businessDomain` | `varchar(64)`  | FK -> `BusinessDomain.code` | 所属业务域   |
 
 ### `CustomerGroupMember`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `groupId` | `bigint` | PK/FK -> `CustomerGroup.id` | 分组主键 |
-| `customerId` | `bigint` | PK/FK -> `Customer.id` | 客户主键 |
-| `assignedAt` | `timestamp` | 默认当前 | 加入分组时间 |
-| `businessDomain` | `varchar(64)` | FK -> `BusinessDomain.code` | 域内隔离 |
+| 字段             | 类型          | 约束                        | 说明         |
+| ---------------- | ------------- | --------------------------- | ------------ |
+| `groupId`        | `bigint`      | PK/FK -> `CustomerGroup.id` | 分组主键     |
+| `customerId`     | `bigint`      | PK/FK -> `Customer.id`      | 客户主键     |
+| `assignedAt`     | `timestamp`   | 默认当前                    | 加入分组时间 |
+| `businessDomain` | `varchar(64)` | FK -> `BusinessDomain.code` | 域内隔离     |
 
 ### `BusinessDomain`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `code` | `varchar(64)` | PK | 业务域编码，如 `GENERAL_WAREHOUSING` |
-| `name` | `varchar(64)` | NN | 展示名称 |
-| `description` | `varchar(256)` | 可空 | 说明 |
+| 字段          | 类型           | 约束 | 说明                                 |
+| ------------- | -------------- | ---- | ------------------------------------ |
+| `code`        | `varchar(64)`  | PK   | 业务域编码，如 `GENERAL_WAREHOUSING` |
+| `name`        | `varchar(64)`  | NN   | 展示名称                             |
+| `description` | `varchar(256)` | 可空 | 说明                                 |
 
 > 域权限由钉钉统一控制：业务域仅作为数据标签，后台根据钉钉提供的组织/角色判断当前用户是否可访问对应域数据，无需维护本地 `UserDomainAccess` 表。
 
 ### `ExternalSystemSync`
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| `id` | `bigint` | PK，自增 | 记录主键 |
-| `source` | `varchar(32)` | NN | 外部系统 |
-| `entityType` | `varchar(64)` | NN | `CUSTOMER`、`COMPANY` 等 |
-| `entityId` | `bigint` | NN | 内部实体 ID |
-| `remoteId` | `varchar(128)` | NN | 外部标识 |
-| `syncStatus` | `varchar(32)` | NN | `PENDING`、`SUCCESS`、`FAILED` |
-| `syncedAt` | `timestamp` | 可空 | 最近同步时间 |
+| 字段         | 类型           | 约束     | 说明                           |
+| ------------ | -------------- | -------- | ------------------------------ |
+| `id`         | `bigint`       | PK，自增 | 记录主键                       |
+| `source`     | `varchar(32)`  | NN       | 外部系统                       |
+| `entityType` | `varchar(64)`  | NN       | `CUSTOMER`、`COMPANY` 等       |
+| `entityId`   | `bigint`       | NN       | 内部实体 ID                    |
+| `remoteId`   | `varchar(128)` | NN       | 外部标识                       |
+| `syncStatus` | `varchar(32)`  | NN       | `PENDING`、`SUCCESS`、`FAILED` |
+| `syncedAt`   | `timestamp`    | 可空     | 最近同步时间                   |
 
 ## 关系与基数
 
