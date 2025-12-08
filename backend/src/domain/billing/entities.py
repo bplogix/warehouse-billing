@@ -331,9 +331,8 @@ class BillingTemplate:
         if self.template_type is TemplateType.GROUP:
             available_groups = list(self.customer_group_ids or [])
             resolved_group_id = customer_group_id
-            if resolved_group_id is None:
-                if len(available_groups) == 1:
-                    resolved_group_id = available_groups[0]
+            if resolved_group_id is None and len(available_groups) == 1:
+                resolved_group_id = available_groups[0]
             if resolved_group_id is None or resolved_group_id not in available_groups:
                 raise BillingDomainError("group quote requires a valid customer_group_id")
             return QuoteScope.GROUP, SCOPE_PRIORITY[QuoteScope.GROUP], None, resolved_group_id
