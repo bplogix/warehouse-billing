@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '@/utils/http'
+import { apiGet, apiPatch, apiPost, apiPut } from '@/utils/http'
 
 import type {
   CustomerCreatePayload,
@@ -7,6 +7,10 @@ import type {
   CustomerQuery,
   CustomerStatus,
   ExternalCompanyListResponse,
+  CustomerGroupListResponse,
+  CustomerGroup,
+  CustomerGroupCreatePayload,
+  CustomerGroupWithMembers,
 } from './types'
 
 export const fetchCustomers = (query: CustomerQuery) =>
@@ -26,4 +30,18 @@ export const updateCustomerStatus = (
 export const searchExternalCompanies = (keyword: string) =>
   apiGet<ExternalCompanyListResponse>('/api/v1/external-companies', {
     params: { keyword },
+  })
+
+export const fetchCustomerGroups = () =>
+  apiGet<CustomerGroupListResponse>('/api/v1/customer-groups')
+
+export const fetchCustomerGroupDetail = (groupId: number) =>
+  apiGet<CustomerGroupWithMembers>(`/api/v1/customer-groups/${groupId}`)
+
+export const createCustomerGroup = (payload: CustomerGroupCreatePayload) =>
+  apiPost<CustomerGroup>('/api/v1/customer-groups', payload)
+
+export const replaceGroupMembers = (groupId: number, memberIds: number[]) =>
+  apiPut<CustomerGroup>(`/api/v1/customer-groups/${groupId}/members`, {
+    memberIds,
   })

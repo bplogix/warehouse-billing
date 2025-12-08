@@ -6,6 +6,7 @@ import AddCustomer from '@/modules/customer/AddCustomer'
 import CustomerGroups from '@/modules/customer/CustomerGroups'
 import CustomerQuotes from '@/modules/customer/CustomerQuotes'
 import CustomerPage from '@/modules/customer/Default'
+import CustomerDetail from '@/modules/customer/Detail'
 import Dashboard from '@/modules/dashboard/Default'
 import LedgerModule from '@/modules/ledger'
 import WarehouseModule from '@/modules/warehouse'
@@ -48,6 +49,7 @@ export const routeConfig: RouteObject[] = [
         children: [
           { index: true, element: <CustomerPage /> },
           { path: 'create', element: <AddCustomer /> },
+          { path: ':id', element: <CustomerDetail /> },
           { path: 'groups', element: <CustomerGroups /> },
           { path: 'quotes', element: <CustomerQuotes /> },
         ],

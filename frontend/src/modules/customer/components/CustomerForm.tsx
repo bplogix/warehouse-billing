@@ -19,7 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/form-controls/select'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
-import type { CustomerStatus, ExternalCompany } from '@/modules/customer/types'
+import type {
+  CustomerCreatePayload,
+  CustomerStatus,
+  ExternalCompany,
+} from '@/modules/customer/types'
 
 type Props = {
   onCreated?: (id: number | null) => void
@@ -73,7 +77,7 @@ const CustomerForm = ({ onCreated }: Props) => {
 
   const onSubmit = async (values: CustomerFormValues) => {
     setSubmitting(true)
-    const payload = {
+    const payload: CustomerCreatePayload = {
       company: {
         name: values.companyName || values.customerName,
         code: values.companyCode || values.customerCode,
@@ -85,7 +89,7 @@ const CustomerForm = ({ onCreated }: Props) => {
         code: values.customerCode,
         businessDomain: values.businessDomain,
         status: values.status,
-        source: 'INTERNAL',
+        source: values.selectedCompanyId ? 'RB' : 'INTERNAL',
       },
     }
     const id = await create(payload)

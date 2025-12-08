@@ -39,7 +39,7 @@ export interface CustomerCreatePayload {
     name: string
     code: string
     businessDomain: string
-    source?: string
+    source?: 'INTERNAL' | 'RB'
     status?: CustomerStatus
     sourceRefId?: string | null
     bondedLicenseNo?: string | null
@@ -48,7 +48,7 @@ export interface CustomerCreatePayload {
   company: {
     name: string
     code: string
-    source?: string
+    source?: 'INTERNAL' | 'RB'
     sourceRefId?: string | null
   }
 }
@@ -74,4 +74,26 @@ export interface CustomerQuote {
   template: string
   status: string
   updatedAt: string
+}
+
+export interface CustomerGroup {
+  id: number
+  name: string
+  businessDomain: string
+  description?: string | null
+}
+
+export interface CustomerGroupWithMembers extends CustomerGroup {
+  memberIds?: number[]
+}
+
+export interface CustomerGroupListResponse {
+  items: CustomerGroupWithMembers[]
+}
+
+export interface CustomerGroupCreatePayload {
+  name: string
+  businessDomain: string
+  description?: string | null
+  memberIds?: number[]
 }

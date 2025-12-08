@@ -2,8 +2,12 @@ import { create } from 'zustand'
 
 import {
   createCustomer,
+  createCustomerGroup,
   fetchCustomerDetail,
   fetchCustomers,
+  fetchCustomerGroupDetail,
+  fetchCustomerGroups,
+  replaceGroupMembers,
   searchExternalCompanies,
   updateCustomerStatus,
 } from '@/modules/customer/api'
@@ -14,6 +18,8 @@ import type {
   CustomerStatus,
   ExternalCompany,
   CustomerCreatePayload,
+  CustomerGroupCreatePayload,
+  CustomerGroupWithMembers,
 } from '@/modules/customer/types'
 
 type CustomerStoreState = {
@@ -23,17 +29,19 @@ type CustomerStoreState = {
   detail: CustomerDetail | null
   companySearchLoading: boolean
   companyOptions: ExternalCompany[]
-  groups: unknown[]
-  quotes: unknown[]
+  groups: CustomerGroupWithMembers[]
+  groupDetail: CustomerGroupWithMembers | null
+  groupLoading: boolean
   fetchList: (query?: CustomerQuery) => Promise<void>
   fetchDetail: (id: number) => Promise<void>
   addCustomer: (payload: CustomerDetail) => void
   create: (payload: CustomerCreatePayload) => Promise<number | null>
   changeStatus: (id: number, status: CustomerStatus) => Promise<void>
   searchCompanies: (keyword: string) => Promise<ExternalCompany[]>
-  addGroup?: () => void
-  removeGroup?: () => void
-  updateGroupCustomers?: () => void
+  fetchGroups: () => Promise<void>
+  fetchGroupDetail: (id: number) => Promise<void>
+  createGroup: (payload: CustomerGroupCreatePayload) => Promise<void>
+  updateGroupMembers: (id: number, memberIds: number[]) => Promise<void>
 }
 
 export const useCustomerStore = create<CustomerStoreState>((set, get) => ({
@@ -44,7 +52,8 @@ export const useCustomerStore = create<CustomerStoreState>((set, get) => ({
   companySearchLoading: false,
   companyOptions: [],
   groups: [],
-  quotes: [],
+  groupDetail: null,
+  groupLoading: false,
 
   fetchList: async (query) => {
     set({ loading: true })
@@ -97,12 +106,50 @@ export const useCustomerStore = create<CustomerStoreState>((set, get) => ({
   searchCompanies: async (keyword: string) => {
     set({ companySearchLoading: true })
     try {
-        const res = await searchExternalCompanies(keyword)
-        const options = res?.items ?? []
-        set({ companyOptions: options })
-        return options
+      const res = await searchExternalCompanies(keyword)
+      const options = res?.items ?? []
+      set({ companyOptions: options })
+      return options
     } finally {
       set({ companySearchLoading: false })
     }
+  },
+
+  fetchGroups: async () => {
+    set({ groupLoading: true })
+    try {
+      const res = await fetchCustomerGroups()
+      set({ groups: res.items })
+    } catch (error) {
+      console.error(error)
+    } finally {
+      set({ groupLoading: false })
+    }
+  },
+
+  fetchGroupDetail: async (id: number) => {
+    set({ groupLoading: true })
+    try {
+      const res = await fetchCustomerGroupDetail(id)
+      set({ groupDetail: res })
+    } catch (error) {
+      console.error(error)
+    } finally {
+      set({ groupLoading: false })
+    }
+  },
+
+  createGroup: async (payload) => {
+    try {
+      await createCustomerGroup(payload)
+      await get().fetchGroups()
+    } catch (error) {
+      console.error(error)
+    }
+  },
+
+  updateGroupMembers: async (id, memberIds) => {
+    await replaceGroupMembers(id, memberIds)
+    await get().fetchGroups()
   },
 }))
