@@ -3,9 +3,7 @@ import { Card } from '@/components/ui/display/card'
 import { Button } from '@/components/ui/form-controls/button'
 import { Input } from '@/components/ui/form-controls/input'
 import type { Template } from '@/modules/billing/schemas/template'
-import {
-  TemplateType,
-} from '@/modules/billing/schemas/template'
+import { TemplateType } from '@/modules/billing/schemas/template'
 import { useBillingStore } from '@/modules/billing/stores/useBillingStore'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import { Plus } from 'lucide-react'

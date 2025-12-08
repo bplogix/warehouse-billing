@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/display/badge'
 import { Button } from '@/components/ui/form-controls/button'
+import { CustomerSourceDisplay } from '@/constants/common'
 import type { CustomerListItem, CustomerStatus } from '@/modules/customer/types'
 import { Edit3, RefreshCw } from 'lucide-react'
 
@@ -16,6 +17,8 @@ const CustomerCard = ({
 }: CustomerCardProps) => {
   const nextStatus: CustomerStatus =
     customer.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+  const sourceLabel =
+    CustomerSourceDisplay[customer.source] ?? customer.source ?? '-'
 
   return (
     <div className="relative rounded-lg border bg-background shadow-sm">
@@ -31,7 +34,7 @@ const CustomerCard = ({
                 业务域：{customer.businessDomain}
               </Badge>
               <Badge variant="outline" className="text-xs font-medium">
-                来源：{customer.source}
+                来源：{sourceLabel}
               </Badge>
             </div>
           </div>

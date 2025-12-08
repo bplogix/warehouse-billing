@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/display/badge'
 import { Button } from '@/components/ui/form-controls/button'
 import { Card } from '@/components/ui/display/card'
 import { Separator } from '@/components/ui/display/separator'
+import { CustomerSourceDisplay } from '@/constants/common'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import type { CustomerStatus } from '@/modules/customer/types'
 
@@ -46,6 +47,9 @@ const CustomerDetail = () => {
     )
   }
 
+  const sourceLabel =
+    CustomerSourceDisplay[detail.source] ?? detail.source ?? '-'
+
   return (
     <div className="space-y-6 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -56,9 +60,11 @@ const CustomerDetail = () => {
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">业务域：{detail.businessDomain}</Badge>
-            <Badge variant="outline">来源：{detail.source}</Badge>
+            <Badge variant="outline">来源：{sourceLabel}</Badge>
             {detail.status && (
-              <Badge variant={detail.status === 'ACTIVE' ? 'default' : 'outline'}>
+              <Badge
+                variant={detail.status === 'ACTIVE' ? 'default' : 'outline'}
+              >
                 {detail.status === 'ACTIVE' ? '启用' : '停用'}
               </Badge>
             )}

@@ -1,3 +1,5 @@
+import type { CustomerSource } from '@/constants/common'
+
 export type CustomerStatus = 'ACTIVE' | 'INACTIVE'
 
 export interface ExternalCompany {
@@ -16,7 +18,7 @@ export interface CustomerListItem {
   customerName: string
   customerCode: string
   businessDomain: string
-  source: string
+  source: CustomerSource
   status?: CustomerStatus
 }
 
@@ -39,7 +41,7 @@ export interface CustomerCreatePayload {
     name: string
     code: string
     businessDomain: string
-    source?: 'INTERNAL' | 'RB'
+    source?: CustomerSource
     status?: CustomerStatus
     sourceRefId?: string | null
     bondedLicenseNo?: string | null
@@ -48,7 +50,7 @@ export interface CustomerCreatePayload {
   company: {
     name: string
     code: string
-    source?: 'INTERNAL' | 'RB'
+    source?: CustomerSource
     sourceRefId?: string | null
   }
 }
@@ -57,7 +59,7 @@ export interface CustomerQuery {
   keyword?: string | null
   businessDomain?: string | null
   status?: CustomerStatus | null
-  source?: string | null
+  source?: CustomerSource | null
   limit?: number
   offset?: number
 }

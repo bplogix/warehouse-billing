@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/form-controls/select'
+import { CustomerSource } from '@/constants/common'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import type {
   CustomerCreatePayload,
@@ -65,7 +66,7 @@ const CustomerForm = ({ onCreated }: Props) => {
   }, [keyword, searchCompanies])
 
   const companyList: ExternalCompany[] = useMemo(
-    () => Array.isArray(companyOptions) ? companyOptions : [],
+    () => (Array.isArray(companyOptions) ? companyOptions : []),
     [companyOptions],
   )
 
@@ -81,7 +82,9 @@ const CustomerForm = ({ onCreated }: Props) => {
       company: {
         name: values.companyName || values.customerName,
         code: values.companyCode || values.customerCode,
-        source: values.selectedCompanyId ? 'RB' : 'INTERNAL',
+        source: values.selectedCompanyId
+          ? CustomerSource.RB
+          : CustomerSource.SELF,
         sourceRefId: values.selectedCompanyId || null,
       },
       customer: {
@@ -89,7 +92,9 @@ const CustomerForm = ({ onCreated }: Props) => {
         code: values.customerCode,
         businessDomain: values.businessDomain,
         status: values.status,
-        source: values.selectedCompanyId ? 'RB' : 'INTERNAL',
+        source: values.selectedCompanyId
+          ? CustomerSource.RB
+          : CustomerSource.SELF,
       },
     }
     const id = await create(payload)

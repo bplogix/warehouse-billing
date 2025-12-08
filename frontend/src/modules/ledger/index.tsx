@@ -98,8 +98,10 @@ const LedgerModule = () => {
     if (!customerId || !currentTemplate) return []
     const customerLogs = logs.filter((log) => log.customerId === customerId)
     return customerLogs.flatMap<LedgerEntry>((log) => {
-      const rules = currentTemplate.rules.filter((rule) =>
-        matchRuleToOperation(rule.category, log.operationType),
+      const rules = currentTemplate.rules.filter(
+        (rule) =>
+          !rule.supportOnly &&
+          matchRuleToOperation(rule.category, log.operationType),
       )
       return rules.map((rule) => {
         const quantity = log.quantity

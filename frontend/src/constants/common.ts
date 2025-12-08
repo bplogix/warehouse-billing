@@ -14,6 +14,16 @@ export enum SourceType {
   RB = 'RB-WMS', // API接口
 }
 
+export enum CustomerSource {
+  SELF = 'SELF', // 自建仓
+  RB = 'RB-WMS', // RB-WMS
+}
+
+export const CustomerSourceDisplay: Record<CustomerSource, string> = {
+  [CustomerSource.SELF]: '自建仓',
+  [CustomerSource.RB]: 'RB-WMS',
+}
+
 export enum Mode {
   BROWSE = 'BROWSE', // 浏览
   CREATE = 'CREATE', // 创建
