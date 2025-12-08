@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.intrastructure.database.models import CustomerGroup, CustomerGroupMember
 
@@ -22,8 +23,30 @@ class CustomerGroupRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_group_with_members(self, group_id: int) -> CustomerGroup | None:
+        stmt = (
+            select(CustomerGroup)
+            .options(selectinload(CustomerGroup.members))
+            .where(CustomerGroup.id == group_id, CustomerGroup.is_deleted.is_(False))
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_groups(self) -> list[CustomerGroup]:
         stmt = select(CustomerGroup).where(CustomerGroup.is_deleted.is_(False))
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_groups_with_members(self, business_domains: list[str]) -> list[CustomerGroup]:
+        if not business_domains:
+            return []
+        domains = [domain.lower() for domain in business_domains]
+        stmt = (
+            select(CustomerGroup)
+            .options(selectinload(CustomerGroup.members))
+            .where(CustomerGroup.is_deleted.is_(False))
+            .where(func.lower(CustomerGroup.business_domain).in_(domains))
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

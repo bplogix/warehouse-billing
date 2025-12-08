@@ -103,6 +103,21 @@ class CustomerGroupMembersSchema(CamelModel):
     member_ids: list[int] = Field(alias="memberIds")
 
 
+class CustomerGroupWithMembersResponse(CustomerGroupResponse):
+    member_ids: list[int] = Field(default_factory=list, alias="memberIds")
+
+    @classmethod
+    def from_model(cls, model: CustomerGroup) -> CustomerGroupWithMembersResponse:
+        member_ids = [member.customer_id for member in model.members]
+        data = CustomerGroupResponse.from_model(model).model_dump()
+        data.update({"memberIds": member_ids})
+        return cls(**data)
+
+
+class CustomerGroupListResponse(CamelModel):
+    items: list[CustomerGroupWithMembersResponse]
+
+
 class ExternalCompanyResponse(CamelModel):
     company_id: str = Field(alias="companyId")
     company_name: str = Field(alias="companyName")

@@ -57,6 +57,8 @@ class CreateCustomerUseCase:
         customer_repo = CustomerRepository(self._session)
         domain_guard = BusinessDomainGuard.from_context()
         import_service = CustomerImportService(domain_guard)
+        allowed_domains = domain_guard.allowed_domains
+        business_domain = customer_cmd.business_domain or (allowed_domains[0] if allowed_domains else BusinessDomainGuard.DEFAULT_DOMAIN)
 
         company_entity = CompanyEntity(
             company_id=company_cmd.company_code,
@@ -83,7 +85,7 @@ class CreateCustomerUseCase:
             company=company_entity,
             customer_name=customer_cmd.customer_name,
             customer_code=customer_cmd.customer_code,
-            business_domain="WAREHOUSE",
+            business_domain=business_domain,
             source=customer_cmd.source,
             status=customer_cmd.status,
             source_ref_id=customer_cmd.source_ref_id,
@@ -214,23 +216,61 @@ class ManageCustomerGroupUseCase:
         operator: str,
     ) -> CustomerGroup | None:
         repo = CustomerGroupRepository(self._session)
-        group = await repo.get_group(cmd.group_id)
-        if group is None:
-            return None
-        guard = BusinessDomainGuard.from_context()
-        guard.ensure_access(group.business_domain)
-        members = [
-            CustomerGroupMember(
-                group_id=cmd.group_id,
-                customer_id=customer_id,
-                business_domain=group.business_domain,
-                created_by=operator,
-            )
-            for customer_id in cmd.member_ids
-        ]
+        # 在显式事务中完成查询与写入，避免 autobegin 后再次 begin 触发重复事务错误
         async with self._session.begin():
+            group = await repo.get_group(cmd.group_id)
+            if group is None:
+                return None
+            guard = BusinessDomainGuard.from_context()
+            guard.ensure_access(group.business_domain)
+            members = [
+                CustomerGroupMember(
+                    group_id=cmd.group_id,
+                    customer_id=customer_id,
+                    business_domain=group.business_domain,
+                    created_by=operator,
+                )
+                for customer_id in cmd.member_ids
+            ]
             await repo.replace_members(cmd.group_id, members)
         return group
+
+
+@dataclass
+class CustomerGroupListItem:
+    group: CustomerGroup
+    member_ids: list[int]
+
+
+@dataclass
+class CustomerGroupListResult:
+    groups: list[CustomerGroupListItem]
+
+
+class QueryCustomerGroupsUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def execute(self) -> CustomerGroupListResult:
+        repo = CustomerGroupRepository(self._session)
+        guard = BusinessDomainGuard.from_context()
+        domains = guard.allowed_domains
+        groups = await repo.list_groups_with_members(domains)
+        items = [CustomerGroupListItem(group=g, member_ids=[m.customer_id for m in g.members]) for g in groups]
+        return CustomerGroupListResult(groups=items)
+
+
+class GetCustomerGroupDetailUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def execute(self, group_id: int) -> CustomerGroupListItem | None:
+        repo = CustomerGroupRepository(self._session)
+        group = await repo.get_group_with_members(group_id)
+        if group is None:
+            return None
+        BusinessDomainGuard.from_context().ensure_access(group.business_domain)
+        return CustomerGroupListItem(group=group, member_ids=[m.customer_id for m in group.members])
 
 
 @dataclass
