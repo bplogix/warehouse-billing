@@ -49,6 +49,8 @@ class RealDingTalkAuthGateway(DingTalkAuthGateway):
         try:
             access_token = await self._client.get_user_access_token(auth_code)
             user_data = await self._client.get_user_info(access_token.access_token)
+            # await self._client.get_userid_by_unionid(user_data.unionId)
+            # await self._client.get_user_info_by_user_id(user_data.unionId)
         except DingTalkClientError as exc:
             raise DingTalkGatewayError(str(exc)) from exc
 
