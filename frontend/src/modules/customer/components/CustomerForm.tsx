@@ -1,4 +1,6 @@
-import { Badge } from '@/components/ui/display/badge'
+import { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+
 import { Button } from '@/components/ui/form-controls/button'
 import {
   Form,
@@ -16,294 +18,230 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/form-controls/select'
-import { Textarea } from '@/components/ui/form-controls/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/overlay/dialog'
-import type { FC } from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
-
-import type { Company, Customer } from '@/modules/customer/schemas/customer'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
+import type { CustomerStatus, ExternalCompany } from '@/modules/customer/types'
+
+type Props = {
+  onCreated?: (id: number | null) => void
+}
 
 type CustomerFormValues = {
   customerName: string
   customerCode: string
-  address: string
-  contactEmail: string
-  contactPerson: string
-  rbCompanyId?: string
-  status: string
-}
-
-type CustomerFormProps = {
-  open: boolean
-  onClose: () => void
-  initialData?: Customer | null
+  businessDomain: string
+  status: CustomerStatus
+  companyName: string
+  companyCode: string
+  selectedCompanyId?: string
 }
 
 const defaultValues: CustomerFormValues = {
   customerName: '',
   customerCode: '',
-  address: '',
-  contactEmail: '',
-  contactPerson: '',
-  rbCompanyId: '',
+  businessDomain: '',
   status: 'ACTIVE',
+  companyName: '',
+  companyCode: '',
 }
 
-const statusOptions = [
+const statusOptions: { value: CustomerStatus; label: string }[] = [
   { value: 'ACTIVE', label: '启用' },
   { value: 'INACTIVE', label: '停用' },
 ]
 
-const CustomerForm: FC<CustomerFormProps> = ({
-  open,
-  onClose,
-  initialData,
-}) => {
-  const isEdit = Boolean(initialData)
-  const { addCustomer, updateCustomer, searchCompanies } = useCustomerStore()
+const CustomerForm = ({ onCreated }: Props) => {
   const form = useForm<CustomerFormValues>({ defaultValues })
-  const [options, setOptions] = useState<Company[]>([])
-  const [companyInput, setCompanyInput] = useState('')
-  const [companyLoading, setCompanyLoading] = useState(false)
+  const { create, searchCompanies, companyOptions, companySearchLoading } =
+    useCustomerStore()
+  const [keyword, setKeyword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (initialData) {
-      form.reset({
-        customerName: initialData.customerName,
-        customerCode: initialData.customerCode,
-        address: initialData.address,
-        contactEmail: initialData.contactEmail,
-        contactPerson: initialData.contactPerson,
-        rbCompanyId: initialData.rbCompanyId,
-        status: initialData.status,
-      })
-    } else {
-      form.reset(defaultValues)
-    }
-  }, [initialData, form])
+    void searchCompanies(keyword)
+  }, [keyword, searchCompanies])
 
-  const handleSearch = useCallback(
-    async (value: string) => {
-      setCompanyInput(value)
-      setCompanyLoading(true)
-      const result = await searchCompanies(value)
-      setOptions(result)
-      setCompanyLoading(false)
-    },
-    [searchCompanies],
+  const companyList: ExternalCompany[] = useMemo(
+    () => Array.isArray(companyOptions) ? companyOptions : [],
+    [companyOptions],
   )
 
-  const handleSelectCompany = (company: Company | null) => {
-    if (!company) return
-    form.setValue('customerName', company.companyName)
-    form.setValue('customerCode', company.companyCode)
-    form.setValue('contactPerson', company.companyCorporation)
-    form.setValue('contactEmail', company.companyEmail)
-    form.setValue('address', company.companyAddress)
-    form.setValue('rbCompanyId', company.companyId)
+  const handleSelectCompany = (company: ExternalCompany) => {
+    form.setValue('companyName', company.companyName)
+    form.setValue('companyCode', company.companyCode ?? '')
+    form.setValue('selectedCompanyId', company.companyId)
   }
 
-  const dialogTitle = useMemo(
-    () => (initialData ? '编辑客户' : '新增客户'),
-    [initialData],
-  )
-
-  useEffect(() => {
-    if (open && !isEdit) {
-      handleSearch('')
-    }
-  }, [open, handleSearch, isEdit])
-
   const onSubmit = async (values: CustomerFormValues) => {
-    if (initialData) {
-      updateCustomer(initialData.id, values)
-    } else {
-      addCustomer(values)
+    setSubmitting(true)
+    const payload = {
+      company: {
+        name: values.companyName || values.customerName,
+        code: values.companyCode || values.customerCode,
+        source: values.selectedCompanyId ? 'RB' : 'INTERNAL',
+        sourceRefId: values.selectedCompanyId || null,
+      },
+      customer: {
+        name: values.customerName,
+        code: values.customerCode,
+        businessDomain: values.businessDomain,
+        status: values.status,
+        source: 'INTERNAL',
+      },
     }
-    onClose()
+    const id = await create(payload)
+    setSubmitting(false)
+    if (onCreated) {
+      onCreated(id)
+    }
+    form.reset(defaultValues)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-6">
-          {!isEdit && (
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">RB 公司库</p>
-                  <p className="text-xs text-muted-foreground">
-                    输入公司名称或编码搜索，点击条目自动填充表单
-                  </p>
-                </div>
-                {companyLoading && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/60 border-t-transparent" />
-                    搜索中...
-                  </div>
-                )}
-              </div>
-              <div className="mt-3 space-y-3">
-                <Input
-                  placeholder="输入公司名称或编码搜索"
-                  value={companyInput}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
-                <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/60 p-2 text-sm">
-                  {options.length === 0 && (
-                    <p className="text-muted-foreground">暂无匹配结果</p>
-                  )}
-                  {options.map((option) => (
-                    <button
-                      key={option.companyId}
-                      className="flex w-full flex-col gap-1 rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => handleSelectCompany(option)}
-                    >
-                      <div className="flex items-center justify-between text-sm font-medium">
-                        <span>{option.companyName}</span>
-                        <Badge variant="outline">{option.companyCode}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {option.companyAddress}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Form {...form}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="customerName"
-                  rules={{ required: '请输入客户名称' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>客户名称</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="customerCode"
-                  rules={{ required: '请输入客户编码' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>客户编码</FormLabel>
-                      <FormControl>
-                        <Input {...field} disabled={isEdit} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="contactPerson"
-                  rules={{ required: '请输入联系人' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>联系人</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="contactEmail"
-                  rules={{ required: '请输入联系邮箱' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>联系邮箱</FormLabel>
-                      <FormControl>
-                        <Input type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="address"
-                rules={{ required: '请输入地址' }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>地址</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>状态</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="请选择状态" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {statusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <DialogFooter className="pt-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  取消
-                </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? '保存中...' : '保存'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+    <Form {...form}>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="customerName"
+            rules={{ required: '请输入客户名称' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>客户名称</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="customerCode"
+            rules={{ required: '请输入客户编码' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>客户编码</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="businessDomain"
+            rules={{ required: '请输入业务域' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>业务域</FormLabel>
+                <FormControl>
+                  <Input placeholder="例如：物流/仓储" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>状态</FormLabel>
+                <Select
+                  defaultValue={field.value}
+                  onValueChange={(value: CustomerStatus) =>
+                    field.onChange(value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">关联公司（RB 公司库）</p>
+            {companySearchLoading && (
+              <span className="text-xs text-muted-foreground">搜索中...</span>
+            )}
+          </div>
+          <Input
+            placeholder="输入公司名称或编码检索"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+          <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/80 p-2 text-sm">
+            {companyList.length === 0 && (
+              <p className="text-muted-foreground">暂无匹配结果</p>
+            )}
+            {companyList.map((company) => (
+              <button
+                key={company.companyId}
+                type="button"
+                className="w-full rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
+                onClick={() => handleSelectCompany(company)}
+              >
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span>{company.companyName}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {company.companyCode}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>公司名称</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="companyCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>公司编码</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={submitting}>
+            {submitting ? '创建中...' : '创建客户'}
+          </Button>
+        </div>
+      </form>
+    </Form>
   )
 }
 
