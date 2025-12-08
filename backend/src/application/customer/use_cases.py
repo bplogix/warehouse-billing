@@ -83,7 +83,7 @@ class CreateCustomerUseCase:
             company=company_entity,
             customer_name=customer_cmd.customer_name,
             customer_code=customer_cmd.customer_code,
-            business_domain=customer_cmd.business_domain,
+            business_domain="WAREHOUSE",
             source=customer_cmd.source,
             status=customer_cmd.status,
             source_ref_id=customer_cmd.source_ref_id,

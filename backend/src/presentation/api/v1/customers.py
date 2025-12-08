@@ -85,7 +85,6 @@ async def create_customer(
 @router.get("", response_model=SuccessResponse[CustomerListResponse])
 async def list_customers(
     keyword: str | None = Query(default=None),
-    business_domain: str | None = Query(default=None, alias="businessDomain"),
     status_filter: CustomerStatus | None = Query(default=None, alias="status"),
     source: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=100),
@@ -94,7 +93,7 @@ async def list_customers(
 ) -> SuccessResponse[CustomerListResponse]:
     cmd = QueryCustomersCommand(
         keyword=keyword,
-        business_domain=business_domain,
+        business_domain="WAREHOUSE",
         status=status_filter,
         source=source,
         limit=limit,

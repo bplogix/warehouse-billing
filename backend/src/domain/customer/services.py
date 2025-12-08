@@ -28,7 +28,7 @@ class BusinessDomainGuard:
     @classmethod
     def from_context(cls) -> BusinessDomainGuard:
         ctx = get_current_user_context()
-        domains = ctx.domain_codes if ctx else []
+        domains = ctx.domain_codes if ctx else ["WAREHOUSE"]
         return cls(domains)
 
 
