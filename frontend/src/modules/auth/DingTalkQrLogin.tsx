@@ -27,7 +27,7 @@ const statusCopy: Record<
     title: '请使用钉钉扫码登录',
     hint: '打开手机钉钉扫一扫，完成确认后自动登录',
     badge: '等待扫码',
-    tone: 'bg-blue-50 text-blue-700 border-blue-100',
+    tone: 'bg-primary/10 text-primary border-primary/20',
   },
   scanned: {
     title: '已扫描，等待确认',
@@ -226,31 +226,31 @@ const DingTalkQrLogin = () => {
       : 'text-muted-foreground'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-muted/30">
       <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-12">
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                 <ShieldCheck className="h-4 w-4" />
                 企业钉钉认证
               </div>
-              <h1 className="text-3xl font-semibold text-slate-900">
+              <h1 className="text-3xl font-semibold text-foreground">
                 钉钉扫码登录仓储计费系统
               </h1>
-              <p className="text-base text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 使用企业钉钉账号免密码登录，支持桌面端扫码，登录成功后自动返回工作台。
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="border border-slate-200/80 bg-white shadow-sm">
+              <Card className="border border-border/70 bg-card shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-3 space-y-0">
-                  <div className="rounded-full bg-blue-100 p-2 text-blue-600">
+                  <div className="rounded-full bg-primary/10 p-2 text-primary">
                     <ScanLine className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-foreground">
                       实时轮询
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -259,13 +259,13 @@ const DingTalkQrLogin = () => {
                   </div>
                 </CardHeader>
               </Card>
-              <Card className="border border-slate-200/80 bg-white shadow-sm">
+              <Card className="border border-border/70 bg-card shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-3 space-y-0">
                   <div className="rounded-full bg-emerald-100 p-2 text-emerald-600">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-foreground">
                       单次有效
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -276,20 +276,20 @@ const DingTalkQrLogin = () => {
               </Card>
             </div>
 
-            <Alert className="border-blue-100 bg-blue-50 text-blue-800">
+            <Alert className="border-border/70 bg-card text-foreground">
               <AlertDescription className="flex items-start gap-2 text-sm">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="text-muted-foreground">
                   二维码有效期 2 分钟。确认后自动跳转至上次访问页面（redirect 参数）。
                 </span>
               </AlertDescription>
             </Alert>
           </div>
 
-          <Card className="border-primary/20 bg-white shadow-xl shadow-blue-200/30">
+          <Card className="border border-border/70 bg-card shadow-md">
             <CardHeader className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">
+                <h2 className="text-xl font-semibold text-foreground">
                   钉钉扫码登录
                 </h2>
                 <Badge
@@ -308,7 +308,7 @@ const DingTalkQrLogin = () => {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="relative mx-auto flex h-72 w-72 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 shadow-inner">
+              <div className="relative mx-auto flex h-72 w-72 items-center justify-center rounded-2xl border border-border/70 bg-muted/40 shadow-inner">
                 {!qrImage && <Skeleton className="h-60 w-60 rounded-xl" />}
                 {qrImage && (
                   <a
@@ -319,15 +319,15 @@ const DingTalkQrLogin = () => {
                   >
                     <img
                       alt="钉钉扫码登录"
-                      className="h-60 w-60 rounded-xl bg-white p-3 shadow-sm transition hover:scale-[1.01] hover:shadow-md"
+                      className="h-60 w-60 rounded-xl bg-background p-3 shadow-sm transition hover:scale-[1.01] hover:shadow-md"
                       src={qrImage}
                     />
                   </a>
                 )}
 
                 {status === 'expired' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm">
-                    <p className="text-base font-semibold text-slate-800">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-background/85 backdrop-blur-sm">
+                    <p className="text-base font-semibold text-foreground">
                       二维码已失效
                     </p>
                     <Button
@@ -342,9 +342,9 @@ const DingTalkQrLogin = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm">
-                <div className="flex items-center gap-2 font-medium text-slate-700">
-                  <Clock3 className="h-4 w-4 text-blue-500" />
+              <div className="flex items-center justify-between rounded-lg border border-dashed border-border/70 px-3 py-2 text-sm">
+                <div className="flex items-center gap-2 font-medium text-foreground">
+                  <Clock3 className="h-4 w-4 text-primary" />
                   二维码将在
                   <span className={`font-semibold ${countdownTone}`}>
                     {countdown}s
@@ -365,8 +365,8 @@ const DingTalkQrLogin = () => {
                 </Button>
               </div>
 
-              <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <p className="flex items-center gap-2">
+              <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2 text-foreground">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
                   扫码后仅钉钉可见，授权成功自动登录。
                 </p>
@@ -379,7 +379,7 @@ const DingTalkQrLogin = () => {
                   <Link className="underline" to="/auth">
                     开发者模式登录
                   </Link>
-                  <span className="text-slate-300">|</span>
+                  <span className="text-border">|</span>
                   <a
                     className="underline"
                     href="https://www.dingtalk.com/"
@@ -397,7 +397,7 @@ const DingTalkQrLogin = () => {
 
       {isLoggingIn && (
         <div className="fixed inset-x-0 bottom-6 flex justify-center">
-          <div className="flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
+          <div className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
             <ScanLine className="h-4 w-4 animate-pulse" />
             正在登录，请稍候...
           </div>
