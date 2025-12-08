@@ -1,6 +1,7 @@
 """Database models organized per domain."""
 
 from .base import Base
+from .billing import BillingQuote, BillingTemplate, BillingTemplateRule
 from .company import Company
 from .customer import Customer, CustomerGroup, CustomerGroupMember, CustomerStatus
 from .domain import BusinessDomain
@@ -16,4 +17,7 @@ __all__ = [
     "CustomerStatus",
     "ExternalSystemSync",
     "SyncStatus",
+    "BillingTemplate",
+    "BillingTemplateRule",
+    "BillingQuote",
 ]
