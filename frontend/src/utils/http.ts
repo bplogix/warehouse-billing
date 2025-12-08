@@ -1,7 +1,12 @@
-import axios, { type AxiosError, type AxiosResponse } from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from 'axios'
 import { toast } from 'sonner'
 
 import type { ApiResponse } from '@/types/common'
+import { useAuthStore } from '@/stores/useAuth'
 import { ApiError } from '../constants/error'
 
 // 创建 axios 实例
@@ -14,15 +19,26 @@ const http = axios.create({
   withCredentials: false, // 允许携带 Cookie 进行跨域请求
 })
 
-// 响应拦截器(统一处理后台返回的格式)
+// 请求拦截器：统一追加鉴权头
+http.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token.accessToken
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// 响应拦截器：处理鉴权和错误提示（不解包 data，解包在 API 层完成）
 http.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const res = response.data
-    console.log(res)
-    // 如果 success 不是 true, 认为是业务错误
-    if (res.success === false) {
-      const errorMessage = res.message || 'リクエストが失敗しました'
-      // 显示错误通知
+    if (
+      res &&
+      typeof res === 'object' &&
+      'success' in res &&
+      res.success === false
+    ) {
+      const errorMessage = res.message || '请求失败'
       toast.error(errorMessage)
       throw new ApiError(res.errorCode || 500, errorMessage)
     }
@@ -33,21 +49,73 @@ http.interceptors.response.use(
     let errorMessage = 'リクエストが失敗しました'
     let errorCode = 500
 
-    // 处理网络错误或其他 axios 错误
     if (error.response) {
       const res = error.response.data
       errorCode = error.response.status
-      errorMessage = res.message || 'リクエストが失敗しました'
+      errorMessage = (res && res.message) || 'リクエストが失失败'
+
+      if (errorCode === 401 || errorCode === 403) {
+        useAuthStore.getState().clearAuth()
+        window.location.assign('/login/dingtalk')
+      }
     } else if (error.request) {
       errorMessage = 'サーバーに接続できません'
     } else {
       errorMessage = error.message || '不明なエラーが発生しました'
     }
 
-    // 显示错误通知
     toast.error(errorMessage)
     throw new ApiError(errorCode, errorMessage)
   },
 )
+
+// API 层使用的泛型封装，负责解包 SuccessResponse.data 或返回裸对象
+export async function apiGet<T>(url: string, config?: AxiosRequestConfig) {
+  const response = await http.get<ApiResponse<T>>(url, config)
+  const body = response.data
+  if (body && typeof body === 'object' && 'data' in body) {
+    return (body as { data: T }).data
+  }
+  return body as T
+}
+
+export async function apiPost<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+) {
+  const response = await http.post<ApiResponse<T>>(url, data, config)
+  const body = response.data
+  if (body && typeof body === 'object' && 'data' in body) {
+    return (body as { data: T }).data
+  }
+  return body as T
+}
+
+export async function apiPatch<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+) {
+  const response = await http.patch<ApiResponse<T>>(url, data, config)
+  const body = response.data
+  if (body && typeof body === 'object' && 'data' in body) {
+    return (body as { data: T }).data
+  }
+  return body as T
+}
+
+export async function apiPut<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+) {
+  const response = await http.put<ApiResponse<T>>(url, data, config)
+  const body = response.data
+  if (body && typeof body === 'object' && 'data' in body) {
+    return (body as { data: T }).data
+  }
+  return body as T
+}
 
 export default http

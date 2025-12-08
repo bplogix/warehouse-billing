@@ -12,7 +12,11 @@ import { Button } from '@/components/ui/form-controls/button'
 
 import { useAuthStore } from '@/stores/useAuth'
 import type { UserInfo } from '@/types/auth'
-import { createDingTalkQr, fetchDingTalkQrStatus, loginWithDingTalkAuthCode } from './api'
+import {
+  createDingTalkQr,
+  fetchDingTalkQrStatus,
+  loginWithDingTalkAuthCode,
+} from './api'
 import type {
   BackendCurrentUser,
   DingTalkQrCreateResponse,
@@ -216,7 +220,14 @@ const DingTalkQrLogin = () => {
       clearCountdown()
       clearPolling()
     }
-  }, [bootstrapQr, clearCountdown, clearPolling, isAuthenticated, navigate, redirectPath])
+  }, [
+    bootstrapQr,
+    clearCountdown,
+    clearPolling,
+    isAuthenticated,
+    navigate,
+    redirectPath,
+  ])
 
   const statusContent = statusCopy[status]
 
@@ -280,7 +291,8 @@ const DingTalkQrLogin = () => {
               <AlertDescription className="flex items-start gap-2 text-sm">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span className="text-muted-foreground">
-                  二维码有效期 2 分钟。确认后自动跳转至上次访问页面（redirect 参数）。
+                  二维码有效期 2 分钟。确认后自动跳转至上次访问页面（redirect
+                  参数）。
                 </span>
               </AlertDescription>
             </Alert>
