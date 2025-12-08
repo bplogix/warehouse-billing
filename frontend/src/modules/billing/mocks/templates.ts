@@ -3,7 +3,6 @@ import {
   ChargeChannel,
   ChargeUnit,
   PricingMode,
-  TemplateStatus,
   TemplateType,
 } from '@/modules/billing/schemas/template'
 import type { Template } from '@/modules/billing/schemas/template'
@@ -16,9 +15,8 @@ export const mockTemplates: Template[] = [
     templateName: '通用计费标准版',
     description: '适用于所有客户的默认规则',
     effectiveDate: '2025-01-01',
-    expireDate: '',
+    expireDate: null,
     version: 1,
-    status: TemplateStatus.ACTIVE,
     rules: [
       {
         chargeCode: 'STORAGE_BASE',
@@ -67,9 +65,8 @@ export const mockTemplates: Template[] = [
     templateName: '华东大客户群组模板',
     description: '华东区域客户群组定价',
     effectiveDate: '2025-02-01',
-    expireDate: '',
+    expireDate: null,
     version: 2,
-    status: TemplateStatus.ACTIVE,
     customerGroupIds: [10, 11],
     rules: [
       {
@@ -79,8 +76,9 @@ export const mockTemplates: Template[] = [
         channel: ChargeChannel.MANUAL,
         unit: ChargeUnit.ORDER,
         pricingMode: PricingMode.FLAT,
-        price: 28000,
+        price: null,
         tiers: [],
+        supportOnly: true,
       },
       {
         chargeCode: 'RETURN',
@@ -103,7 +101,6 @@ export const mockTemplates: Template[] = [
     effectiveDate: '2025-01-15',
     expireDate: '2026-01-15',
     version: 1,
-    status: TemplateStatus.ACTIVE,
     customerId: 1001,
     rules: [
       {
@@ -122,11 +119,10 @@ export const mockTemplates: Template[] = [
         category: ChargeCategory.MANUAL,
         channel: ChargeChannel.MANUAL,
         unit: ChargeUnit.ORDER,
-        pricingMode: PricingMode.TIERED,
-        tiers: [
-          { minValue: 1, maxValue: 100, price: 500, description: '0-100 单' },
-          { minValue: 101, maxValue: null, price: 450, description: '101+ 单' },
-        ],
+        pricingMode: PricingMode.FLAT,
+        price: null,
+        tiers: [],
+        supportOnly: true,
       },
     ],
   },

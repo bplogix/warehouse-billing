@@ -1,9 +1,3 @@
-export enum TemplateStatus {
-  DRAFT = 'DRAFT', // 草稿
-  ACTIVE = 'ACTIVE', // 激活
-  INACTIVE = 'INACTIVE', // 禁用
-}
-
 export enum TemplateType {
   GLOBAL = 'GLOBAL', // 通用模板
   GROUP = 'GROUP', // 客户分组模板
@@ -80,6 +74,7 @@ export type TemplateRule = {
   price?: number | null
   tiers?: RuleTier[]
   description?: string
+  supportOnly?: boolean
 }
 
 export type Template = {
@@ -89,9 +84,8 @@ export type Template = {
   templateName: string
   description: string
   effectiveDate: string
-  expireDate: string
+  expireDate: string | null
   version: number
-  status: TemplateStatus
   rules: TemplateRule[]
 
   // 客户关联字段
@@ -105,8 +99,7 @@ export type CreateTemplateRequest = {
   templateName: string
   description: string
   effectiveDate: Date
-  expireDate: Date
-  status: TemplateStatus
+  expireDate: Date | null
   rules: TemplateRule[]
 }
 
@@ -119,7 +112,6 @@ export type CreateTemplateRequest = {
 //       "effectiveDate": "2025-09-30",
 //       "expireDate": "2025-10-29",
 //       "version": 1,
-//       "status": "DRAFT",
 //       "rules": [
 //         {
 //           "ruleCode": "STORAGE_FEE",

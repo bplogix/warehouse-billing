@@ -14,12 +14,6 @@ export enum SourceType {
   RB = 'RB-WMS', // API接口
 }
 
-export enum TemplateStatus {
-  DRAFT = 'DRAFT', // 草稿
-  ACTIVE = 'ACTIVE', // 激活
-  INACTIVE = 'INACTIVE', // 禁用
-}
-
 export enum Mode {
   BROWSE = 'BROWSE', // 浏览
   CREATE = 'CREATE', // 创建

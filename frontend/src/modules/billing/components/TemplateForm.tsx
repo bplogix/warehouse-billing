@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/overlay/dialog'
+import { addDays, format } from 'date-fns'
 import { Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -48,7 +49,6 @@ import {
   ChargeChannelDisplay,
   ChargeUnitDisplay,
   PricingMode,
-  TemplateStatus,
   TemplateType,
 } from '@/modules/billing/schemas/template'
 import { useBillingStore } from '@/modules/billing/stores/useBillingStore'
@@ -56,14 +56,40 @@ import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 
 type RuleForm = Template['rules'][number]
 
+const supportOnlyCategories = new Set<ChargeCategory>([
+  ChargeCategory.TRANSPORT,
+  ChargeCategory.MANUAL,
+])
+
+const flatOrTieredCategories = new Set<ChargeCategory>([ChargeCategory.STORAGE])
+
+const flatOnlyCategories = new Set<ChargeCategory>([
+  ChargeCategory.INBOUND_OUTBOUND,
+  ChargeCategory.RETURN,
+  ChargeCategory.MATERIAL,
+])
+
+const getAllowedPricingModes = (category: ChargeCategory) => {
+  if (supportOnlyCategories.has(category)) {
+    return []
+  }
+  if (flatOrTieredCategories.has(category)) {
+    return [PricingMode.FLAT, PricingMode.TIERED]
+  }
+  if (flatOnlyCategories.has(category)) {
+    return [PricingMode.FLAT]
+  }
+  return [PricingMode.FLAT]
+}
+
 type TemplateFormValues = {
   templateName: string
   templateCode: string
   description: string
   effectiveDate: string
-  expireDate: string
-  status: TemplateStatus
+  expireDate: string | null
   customerId: number | null
+  customerGroupIds: number[]
   rules: RuleForm[]
 }
 
@@ -72,11 +98,40 @@ const defaultValues: TemplateFormValues = {
   templateCode: 'GENERAL',
   description: '',
   effectiveDate: '',
-  expireDate: '',
-  status: TemplateStatus.DRAFT,
+  expireDate: null,
   customerId: null,
+  customerGroupIds: [],
   rules: [],
 }
+
+const getRandomSuffix = () =>
+  Math.random().toString(36).slice(2, 8).toUpperCase()
+
+const generateTemplateCode = (type: TemplateType) => {
+  switch (type) {
+    case TemplateType.GROUP:
+      return `G-${getRandomSuffix()}`
+    case TemplateType.CUSTOMER:
+      return `VIP-${getRandomSuffix()}`
+    default:
+      return 'GENERAL'
+  }
+}
+
+const buildDefaultValues = (
+  type: TemplateType,
+  contextGroupId?: number,
+  contextCustomerId?: number,
+): TemplateFormValues => ({
+  templateName: type === TemplateType.GLOBAL ? '通用规则' : '',
+  templateCode: generateTemplateCode(type),
+  description: '',
+  effectiveDate: '',
+  expireDate: null,
+  customerId: contextCustomerId ?? null,
+  customerGroupIds: contextGroupId ? [contextGroupId] : [],
+  rules: [],
+})
 
 type TemplateFormProps = {
   open: boolean
@@ -84,6 +139,12 @@ type TemplateFormProps = {
   initialData?: Template | null
   templateType?: TemplateType
   mode?: 'dialog' | 'inline'
+  contextGroupId?: number
+  contextCustomerId?: number
+  onSubmitTemplate?: (
+    payload: Omit<Template, 'id'>,
+    sourceTemplate: Template | null,
+  ) => Promise<void> | void
 }
 
 const TemplateForm = ({
@@ -92,21 +153,28 @@ const TemplateForm = ({
   initialData,
   templateType = TemplateType.CUSTOMER,
   mode = 'dialog',
+  contextGroupId,
+  contextCustomerId,
+  onSubmitTemplate,
 }: TemplateFormProps) => {
   const { addTemplate, updateTemplate } = useBillingStore()
   const { customers } = useCustomerStore()
   const [activeRuleIndex, setActiveRuleIndex] = useState(0)
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined)
+  const form = useForm<TemplateFormValues>({ defaultValues })
+  const effectiveDateValue = form.watch('effectiveDate')
+  const minEffectiveDate = useMemo(
+    () => format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+    [],
+  )
+  const minExpireDate = useMemo(() => {
+    if (!effectiveDateValue) return ''
+    return format(addDays(new Date(effectiveDateValue), 1), 'yyyy-MM-dd')
+  }, [effectiveDateValue])
   const pricingModeDisplay: Record<PricingMode, string> = {
     [PricingMode.FLAT]: '固定单价',
     [PricingMode.TIERED]: '阶梯计价',
   }
-  const statusDisplay: Record<TemplateStatus, string> = {
-    [TemplateStatus.DRAFT]: '草稿',
-    [TemplateStatus.ACTIVE]: '生效',
-    [TemplateStatus.INACTIVE]: '停用',
-  }
-  const form = useForm<TemplateFormValues>({ defaultValues })
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'rules',
@@ -114,23 +182,80 @@ const TemplateForm = ({
 
   useEffect(() => {
     if (initialData) {
+      const existingGroupIds = initialData.customerGroupIds ?? []
+      const mergedGroupIds =
+        contextGroupId && !existingGroupIds.includes(contextGroupId)
+          ? [...existingGroupIds, contextGroupId]
+          : existingGroupIds
+      const shouldGenerateNewCode =
+        initialData.templateType !== templateType &&
+        templateType !== TemplateType.GLOBAL
+      const codeValue = shouldGenerateNewCode
+        ? generateTemplateCode(templateType)
+        : initialData.templateCode
       form.reset({
         templateName: initialData.templateName,
-        templateCode: initialData.templateCode,
+        templateCode: codeValue,
         description: initialData.description,
         effectiveDate: initialData.effectiveDate,
-        expireDate: initialData.expireDate,
-        status: initialData.status,
-        customerId: initialData.customerId ?? null,
-        rules: initialData.rules.map((rule) => ({
-          ...rule,
-          tiers: rule.tiers ?? [],
-        })),
+        expireDate: initialData.expireDate || null,
+        customerId: contextCustomerId ?? initialData.customerId ?? null,
+        customerGroupIds:
+          mergedGroupIds.length > 0
+            ? mergedGroupIds
+            : contextGroupId
+              ? [contextGroupId]
+              : [],
+        rules: initialData.rules.map((rule) => {
+          const supportOnly =
+            rule.supportOnly ?? supportOnlyCategories.has(rule.category)
+          const allowedModes = getAllowedPricingModes(rule.category)
+          const safePricingMode = supportOnly
+            ? PricingMode.FLAT
+            : allowedModes.includes(rule.pricingMode)
+              ? rule.pricingMode
+              : allowedModes[0]
+          const normalizedTiers = (rule.tiers ?? []).map((tier) => ({
+            ...tier,
+            price: Math.max(0, tier.price),
+          }))
+          return {
+            ...rule,
+            tiers: normalizedTiers,
+            supportOnly,
+            pricingMode: safePricingMode,
+            price: supportOnly
+              ? null
+              : Math.max(
+                  0,
+                  rule.price ?? (safePricingMode === PricingMode.FLAT ? 0 : 0),
+                ),
+          }
+        }),
       })
     } else {
-      form.reset(defaultValues)
+      form.reset(
+        buildDefaultValues(templateType, contextGroupId, contextCustomerId),
+      )
     }
-  }, [initialData, form])
+  }, [initialData, form, templateType, contextGroupId, contextCustomerId])
+
+  useEffect(() => {
+    if (!effectiveDateValue) {
+      if (form.getValues('expireDate')) {
+        form.setValue('expireDate', null)
+      }
+      return
+    }
+    const minDate = format(
+      addDays(new Date(effectiveDateValue), 1),
+      'yyyy-MM-dd',
+    )
+    const expireDate = form.getValues('expireDate')
+    if (expireDate && expireDate < minDate) {
+      form.setValue('expireDate', minDate)
+    }
+  }, [effectiveDateValue, form])
 
   useEffect(() => {
     if (fields.length === 0) {
@@ -147,17 +272,35 @@ const TemplateForm = ({
 
   const onSubmit = async (values: TemplateFormValues) => {
     const payload: Omit<Template, 'id'> = {
-      templateType: initialData?.templateType ?? templateType,
+      templateType,
       templateCode: values.templateCode || `TMP-${Date.now()}`,
       templateName: values.templateName,
       description: values.description,
       effectiveDate: values.effectiveDate,
-      expireDate: values.expireDate,
+      expireDate: values.expireDate || null,
       version: initialData?.version ?? 1,
-      status: values.status,
       rules: values.rules,
-      customerId: values.customerId ?? undefined,
+      customerId: contextCustomerId ?? values.customerId ?? undefined,
     }
+    if (templateType === TemplateType.GROUP) {
+      const derivedGroupIds = contextGroupId
+        ? [contextGroupId]
+        : values.customerGroupIds?.length
+          ? values.customerGroupIds
+          : (initialData?.customerGroupIds ?? [])
+      if (derivedGroupIds.length > 0) {
+        payload.customerGroupIds = derivedGroupIds
+      }
+    } else if (initialData?.customerGroupIds) {
+      payload.customerGroupIds = initialData.customerGroupIds
+    }
+
+    if (onSubmitTemplate) {
+      await onSubmitTemplate(payload, initialData ?? null)
+      onClose()
+      return
+    }
+
     if (initialData) {
       updateTemplate(initialData.id, payload)
     } else {
@@ -176,6 +319,7 @@ const TemplateForm = ({
     }
     const definition = chargeDefinitions.find((item) => item.code === code)
     if (!definition) return
+    const supportOnly = supportOnlyCategories.has(definition.category)
     append({
       chargeCode: definition.code,
       chargeName: definition.name,
@@ -183,9 +327,10 @@ const TemplateForm = ({
       channel: definition.channel,
       unit: definition.unit,
       pricingMode: PricingMode.FLAT,
-      price: 0,
+      price: supportOnly ? null : 0,
       tiers: [],
       description: definition.description,
+      supportOnly,
     })
   }
 
@@ -212,9 +357,22 @@ const TemplateForm = ({
   const renderRuleEditor = (index: number) => {
     const rule = fields[index]
     if (!rule) return null
+    const supportOnly =
+      rule.supportOnly ?? supportOnlyCategories.has(rule.category)
+    const allowedModes = getAllowedPricingModes(rule.category)
     const pricingMode = form.watch(`rules.${index}.pricingMode`) as
       | PricingMode
       | undefined
+    if (!supportOnly && pricingMode === PricingMode.TIERED) {
+      const tiers = form.getValues(`rules.${index}.tiers`) as
+        | RuleForm['tiers']
+        | undefined
+      if (!tiers || tiers.length === 0) {
+        form.setValue(`rules.${index}.tiers`, [
+          { minValue: 0, maxValue: null, price: 0, description: '' },
+        ])
+      }
+    }
 
     return (
       <Card className="shadow-sm">
@@ -243,56 +401,69 @@ const TemplateForm = ({
         </div>
 
         <div className="space-y-3 px-4 py-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name={`rules.${index}.pricingMode`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>计费模式</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择模式" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.values(PricingMode).map((mode) => (
-                        <SelectItem key={mode} value={mode}>
-                          {pricingModeDisplay[mode]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {!supportOnly ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name={`rules.${index}.pricingMode`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>计费模式</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={allowedModes.length <= 1}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择模式" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allowedModes.map((mode) => (
+                          <SelectItem key={mode} value={mode}>
+                            {pricingModeDisplay[mode]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name={`rules.${index}.price`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>单价</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      value={field.value ?? ''}
-                      disabled={pricingMode === PricingMode.TIERED}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === '' ? null : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name={`rules.${index}.price`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>单价</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value ?? ''}
+                        disabled={pricingMode === PricingMode.TIERED}
+                        min={0}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ''
+                              ? null
+                              : Math.max(0, Number(e.target.value)),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          ) : (
+            <p className="rounded-md border border-dashed border-border/60 bg-muted/40 p-3 text-sm text-muted-foreground">
+              运输类与人工录入按外部渠道计费，仅需标记是否支持该项。
+            </p>
+          )}
 
           <div className="space-y-3">
             <FormField
@@ -308,7 +479,7 @@ const TemplateForm = ({
                 </FormItem>
               )}
             />
-            {pricingMode === PricingMode.TIERED && (
+            {!supportOnly && pricingMode === PricingMode.TIERED && (
               <FormField
                 control={form.control}
                 name={`rules.${index}.tiers`}
@@ -325,6 +496,9 @@ const TemplateForm = ({
                               RuleForm['tiers']
                             >
                           ).map((tier, tierIndex: number) => {
+                            const tierCount = tierField.value?.length ?? 0
+                            const isLastTier = tierIndex === tierCount - 1
+                            const canRemove = tierCount > 1 && isLastTier
                             const prevMax =
                               tierIndex === 0
                                 ? null
@@ -384,9 +558,13 @@ const TemplateForm = ({
                                 <Input
                                   type="number"
                                   placeholder="单价"
+                                  min={0}
                                   value={tier.price}
                                   onChange={(e) => {
-                                    const value = Number(e.target.value)
+                                    const value = Math.max(
+                                      0,
+                                      Number(e.target.value),
+                                    )
                                     const updated = [...tierField.value]
                                     updated[tierIndex] = {
                                       ...updated[tierIndex],
@@ -395,19 +573,21 @@ const TemplateForm = ({
                                     tierField.onChange(updated)
                                   }}
                                 />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    const updated = tierField.value.filter(
-                                      (_: unknown, idx: number) =>
-                                        idx !== tierIndex,
-                                    )
-                                    tierField.onChange(updated)
-                                  }}
-                                >
-                                  删除
-                                </Button>
+                                {canRemove && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const updated = tierField.value.filter(
+                                        (_: unknown, idx: number) =>
+                                          idx !== tierIndex,
+                                      )
+                                      tierField.onChange(updated)
+                                    }}
+                                  >
+                                    删除
+                                  </Button>
+                                )}
                               </div>
                             )
                           })}
@@ -464,7 +644,10 @@ const TemplateForm = ({
                 <FormItem>
                   <FormLabel>模板名称</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled />
+                    <Input
+                      {...field}
+                      disabled={templateType === TemplateType.GLOBAL}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -491,47 +674,31 @@ const TemplateForm = ({
                 <FormItem>
                   <FormLabel>生效日期</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" min={minEffectiveDate} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {templateType !== TemplateType.GLOBAL && (
-              <FormField
-                control={form.control}
-                name="expireDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>失效日期</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             <FormField
               control={form.control}
-              name="status"
+              name="expireDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>状态</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择状态" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.values(TemplateStatus).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {statusDisplay[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>截止日期（可选）</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      min={minExpireDate || minEffectiveDate}
+                      disabled={!effectiveDateValue}
+                      value={field.value ?? ''}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === '' ? null : event.target.value,
+                        )
+                      }
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -550,7 +717,7 @@ const TemplateForm = ({
               )}
             />
 
-            {templateType === TemplateType.CUSTOMER && (
+            {templateType === TemplateType.CUSTOMER && !contextCustomerId && (
               <FormField
                 control={form.control}
                 name="customerId"
