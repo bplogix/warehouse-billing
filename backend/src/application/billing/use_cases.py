@@ -71,7 +71,7 @@ class CreateBillingTemplateUseCase:
             expire_date=cmd.expire_date,
             description=cmd.description,
             customer_id=cmd.customer_id,
-            customer_group_ids=cmd.customer_group_ids,
+            customer_group_id=cmd.customer_group_id,
             version=1,
             rules=cmd.rules,
         )
@@ -128,7 +128,7 @@ class UpdateBillingTemplateUseCase:
                 expire_date=cmd.expire_date,
                 description=cmd.description,
                 customer_id=cmd.customer_id,
-                customer_group_ids=cmd.customer_group_ids,
+                customer_group_id=cmd.customer_group_id,
                 version=template.version,
                 rules=cmd.rules,
                 template_id=template.id,
@@ -271,7 +271,7 @@ def _build_domain_template_from_payload(
     expire_date: datetime | None,
     description: str | None,
     customer_id: int | None,
-    customer_group_ids: Sequence[int] | None,
+    customer_group_id: int | None,
     version: int,
     rules: Sequence[TemplateRuleInput],
     template_id: int | None = None,
@@ -286,7 +286,7 @@ def _build_domain_template_from_payload(
         expire_date=expire_date,
         description=description,
         customer_id=customer_id,
-        customer_group_ids=customer_group_ids,
+        customer_group_id=customer_group_id,
         version=version,
         rules=domain_rules,
         id=template_id,
@@ -364,7 +364,7 @@ def _to_template_model(domain_template: DomainTemplate, operator: str | None) ->
         expire_date=domain_template.expire_date,
         version=domain_template.version,
         customer_id=domain_template.customer_id,
-        customer_group_ids=list(domain_template.customer_group_ids or []),
+        customer_group_ids=_as_group_list(domain_template.customer_group_id),
     )
     template.created_by = operator
     template.updated_by = operator
@@ -387,7 +387,7 @@ def _apply_domain_template_to_model(
     template.effective_date = domain_template.effective_date
     template.expire_date = domain_template.expire_date
     template.customer_id = domain_template.customer_id
-    template.customer_group_ids = list(domain_template.customer_group_ids or [])
+    template.customer_group_ids = _as_group_list(domain_template.customer_group_id)
     template.version = domain_template.version
     template.updated_by = operator
     template.rules.clear()
@@ -410,11 +410,23 @@ def _build_domain_template_from_model(template: BillingTemplate) -> DomainTempla
         expire_date=template.expire_date,
         description=template.description,
         customer_id=template.customer_id,
-        customer_group_ids=list(template.customer_group_ids or []),
+        customer_group_id=_extract_customer_group_id(template.customer_group_ids),
         version=template.version,
         rules=rules,
         id=template.id,
     )
+
+# TODO: 新增的这两个方法是 用户组处理，但是可能和业务冲突
+def _as_group_list(group_id: int | None) -> list[int] | None:
+    if group_id is None:
+        return None
+    return [group_id]
+
+
+def _extract_customer_group_id(group_ids: Sequence[int] | None) -> int | None:
+    if not group_ids:
+        return None
+    return group_ids[0]
 
 
 def _deserialize_rule(rule: BillingTemplateRule) -> TemplateRule:
@@ -471,16 +483,14 @@ def _build_domain_quotes(template: DomainTemplate) -> list[DomainQuote]:
         )
         return quotes
     if template.template_type is TemplateType.GROUP:
-        group_ids = list(template.customer_group_ids or [])
-        if not group_ids:
-            raise BillingDomainError("group template missing customer_group_ids")
-        for group_id in group_ids:
-            quotes.append(
-                template.create_quote(
-                    quote_code=_generate_quote_code(template.template_code, QuoteScope.GROUP),
-                    customer_group_id=group_id,
-                )
+        if template.customer_group_id is None:
+            raise BillingDomainError("group template missing customer_group_id")
+        quotes.append(
+            template.create_quote(
+                quote_code=_generate_quote_code(template.template_code, QuoteScope.GROUP),
+                customer_group_id=template.customer_group_id,
             )
+        )
         return quotes
     quotes.append(
         template.create_quote(
