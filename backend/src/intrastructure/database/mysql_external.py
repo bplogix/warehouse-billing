@@ -41,9 +41,10 @@ class ExternalMySQLDatabase:
         if not url:
             logger.warning("external mysql config incomplete, skip initialization")
             return
+        # Avoid pool_pre_ping on async engines: it executes a sync ping that expects greenlet_spawn,
+        # which triggers MissingGreenlet with AsyncPG/aiomysql. We rely on the manual startup check.
         self._engine = create_async_engine(
             url,
-            pool_pre_ping=True,
             pool_size=mysql_settings.POOL_SIZE,
             connect_args={"connect_timeout": mysql_settings.CONNECT_TIMEOUT},
         )

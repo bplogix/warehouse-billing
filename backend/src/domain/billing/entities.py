@@ -207,7 +207,6 @@ class BillingTemplate:
     description: str | None = None
     customer_id: int | None = None
     customer_group_id: int | None = None
-    version: int = 1
     rules: Sequence[TemplateRule | dict[str, Any]] = field(default_factory=list)
     id: int | None = None
 
@@ -260,10 +259,6 @@ class BillingTemplate:
             raise BillingDomainError("rules cannot be empty")
         self.rules = new_rules
         self._ensure_rules()
-        self.bump_version()
-
-    def bump_version(self) -> None:
-        self.version += 1
 
     def schedule(self, effective_date: datetime, expire_date: datetime | None) -> None:
         self.effective_date = effective_date
@@ -295,7 +290,6 @@ class BillingTemplate:
                 "description": self.description,
                 "effectiveDate": self.effective_date.isoformat(),
                 "expireDate": self.expire_date.isoformat() if self.expire_date else None,
-                "version": self.version,
                 "customerId": self.customer_id,
                 "customerGroupId": self.customer_group_id,
             },
@@ -312,7 +306,6 @@ class BillingTemplate:
             "description": self.description,
             "effectiveDate": self.effective_date.isoformat(),
             "expireDate": self.expire_date.isoformat() if self.expire_date else None,
-            "version": self.version,
             "customerId": self.customer_id,
             "customerGroupId": self.customer_group_id,
             "rules": [rule.to_dict() for rule in self._rule_items()],
@@ -334,7 +327,6 @@ class BillingTemplate:
         return BillingQuote(
             quote_code=quote_code,
             template_id=template_id or self.id,
-            template_version=self.version,
             scope_type=scope_type,
             scope_priority=priority,
             customer_id=resolved_customer_id,
@@ -350,7 +342,6 @@ class BillingTemplate:
 @dataclass(slots=True)
 class BillingQuote:
     quote_code: str
-    template_version: int
     scope_type: QuoteScope
     scope_priority: int
     business_domain: str
@@ -374,7 +365,6 @@ class BillingQuote:
             "id": self.id,
             "quoteCode": self.quote_code,
             "templateId": self.template_id,
-            "templateVersion": self.template_version,
             "scopeType": self.scope_type.value,
             "scopePriority": self.scope_priority,
             "businessDomain": self.business_domain,

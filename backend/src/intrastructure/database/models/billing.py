@@ -9,7 +9,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
-    Integer,
     SmallInteger,
     String,
     Text,
@@ -44,7 +43,6 @@ class QuoteTemplatePayload(TypedDict):
     description: str | None
     effectiveDate: str
     expireDate: str | None
-    version: int
     customerId: int | None
     customerGroupId: int | None
 
@@ -93,7 +91,6 @@ class BillingTemplate(AuditMixin, Base):
     business_domain: Mapped[str] = mapped_column(String(64), ForeignKey("business_domains.code"), nullable=False)
     effective_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     customer_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customers.id"))
     customer_group_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customer_groups.id"))
 
@@ -145,7 +142,6 @@ class BillingQuote(AuditMixin, Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     quote_code: Mapped[str] = mapped_column(String(64), nullable=False)
     template_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("billing_templates.id"), nullable=False)
-    template_version: Mapped[int] = mapped_column(Integer, nullable=False)
     scope_type: Mapped[str] = mapped_column(String(16), nullable=False)
     scope_priority: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     customer_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customers.id"))

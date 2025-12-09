@@ -31,11 +31,13 @@ class PostgresDatabase:
             return
 
         db_settings = settings.postgres
+        # Async drivers already perform health checks before lifecycle events, so skip pool_pre_ping.
+        # Keeping pool_pre_ping=True triggers a sync `ping` that requires greenlet_spawn and raises
+        # MissingGreenlet inside AsyncPG, so rely on our manual `SELECT 1` startup check instead.
         self._engine = create_async_engine(
             db_settings.sqlalchemy_url,
             pool_size=db_settings.POOL_SIZE,
             max_overflow=db_settings.MAX_OVERFLOW,
-            pool_pre_ping=True,
         )
         self._session_factory = async_sessionmaker(
             self._engine,

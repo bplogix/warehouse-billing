@@ -53,7 +53,6 @@ class CreateBillingTemplateCommand:
 @dataclass(slots=True)
 class UpdateBillingTemplateCommand:
     template_id: int
-    version: int
     template_name: str
     effective_date: datetime
     expire_date: datetime | None = None

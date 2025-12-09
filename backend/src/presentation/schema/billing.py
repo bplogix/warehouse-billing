@@ -88,7 +88,6 @@ class BillingTemplateListItemSchema(CamelModel):
     description: str | None = None
     effective_date: datetime = Field(..., alias="effectiveDate")
     expire_date: datetime | None = Field(None, alias="expireDate")
-    version: int
     customer_id: int | None = Field(None, alias="customerId")
     customer_group_id: int | None = Field(None, alias="customerGroupId")
     created_at: datetime = Field(..., alias="createdAt")
@@ -105,7 +104,6 @@ class BillingTemplateListItemSchema(CamelModel):
             description=model.description,
             effectiveDate=model.effective_date,
             expireDate=model.expire_date,
-            version=model.version,
             customerId=model.customer_id,
             customerGroupId=model.customer_group_id,
             createdAt=model.created_at,
@@ -124,7 +122,6 @@ class BillingTemplateDetailSchema(CamelModel):
     description: str | None = None
     effective_date: datetime = Field(..., alias="effectiveDate")
     expire_date: datetime | None = Field(None, alias="expireDate")
-    version: int
     customer_id: int | None = Field(None, alias="customerId")
     customer_group_id: int | None = Field(None, alias="customerGroupId")
     rules: list[TemplateRuleSchema]
@@ -142,7 +139,6 @@ class BillingTemplateDetailSchema(CamelModel):
             description=model.description,
             effectiveDate=model.effective_date,
             expireDate=model.expire_date,
-            version=model.version,
             customerId=model.customer_id,
             customerGroupId=model.customer_group_id,
             rules=[TemplateRuleSchema.from_model(rule) for rule in model.rules],
@@ -173,7 +169,6 @@ class BillingTemplateUpdateSchema(CamelModel):
     description: str | None = None
     effective_date: datetime = Field(..., alias="effectiveDate")
     expire_date: datetime | None = Field(None, alias="expireDate")
-    version: int
     customer_id: int | None = Field(None, alias="customerId")
     customer_group_id: int | None = Field(None, alias="customerGroupId")
     rules: list[TemplateRuleSchema]
@@ -197,7 +192,6 @@ class BillingQuoteSchema(CamelModel):
     id: int
     quote_code: str = Field(..., alias="quoteCode")
     template_id: int = Field(..., alias="templateId")
-    template_version: int = Field(..., alias="templateVersion")
     scope_type: str = Field(..., alias="scopeType")
     scope_priority: int = Field(..., alias="scopePriority")
     customer_id: int | None = Field(None, alias="customerId")
@@ -215,7 +209,6 @@ class BillingQuoteSchema(CamelModel):
             id=model.id,
             quoteCode=model.quote_code,
             templateId=model.template_id,
-            templateVersion=model.template_version,
             scopeType=model.scope_type,
             scopePriority=model.scope_priority,
             customerId=model.customer_id,

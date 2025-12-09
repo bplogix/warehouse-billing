@@ -183,7 +183,6 @@ async def update_template(
 
     cmd = UpdateBillingTemplateCommand(
         template_id=template_id,
-        version=payload.version,
         template_name=payload.template_name,
         effective_date=payload.effective_date,
         expire_date=payload.expire_date,

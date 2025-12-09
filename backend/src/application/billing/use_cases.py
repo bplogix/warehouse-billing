@@ -72,7 +72,6 @@ class CreateBillingTemplateUseCase:
             description=cmd.description,
             customer_id=cmd.customer_id,
             customer_group_id=cmd.customer_group_id,
-            version=1,
             rules=cmd.rules,
         )
         orm_template = _to_template_model(domain_template, operator=operator)
@@ -115,9 +114,6 @@ class UpdateBillingTemplateUseCase:
             guard = BusinessDomainGuard.from_context()
             guard.ensure_access(template.business_domain)
 
-            if template.version != cmd.version:
-                raise BillingDomainError("template version mismatch")
-
             template_type = TemplateType(template.template_type)
             domain_template = _build_domain_template_from_payload(
                 template_code=template.template_code,
@@ -129,11 +125,9 @@ class UpdateBillingTemplateUseCase:
                 description=cmd.description,
                 customer_id=cmd.customer_id,
                 customer_group_id=cmd.customer_group_id,
-                version=template.version,
                 rules=cmd.rules,
                 template_id=template.id,
             )
-            domain_template.bump_version()
 
             _apply_domain_template_to_model(domain_template, template, operator=operator)
             # 更新时旧报价单失效，生成新报价单
@@ -147,7 +141,6 @@ class UpdateBillingTemplateUseCase:
         logger.info(
             "billing template updated",
             template_id=template.id,
-            version=template.version,
         )
         return template
 
@@ -272,7 +265,6 @@ def _build_domain_template_from_payload(
     description: str | None,
     customer_id: int | None,
     customer_group_id: int | None,
-    version: int,
     rules: Sequence[TemplateRuleInput],
     template_id: int | None = None,
 ) -> DomainTemplate:
@@ -287,7 +279,6 @@ def _build_domain_template_from_payload(
         description=description,
         customer_id=customer_id,
         customer_group_id=customer_group_id,
-        version=version,
         rules=domain_rules,
         id=template_id,
     )
@@ -362,7 +353,6 @@ def _to_template_model(domain_template: DomainTemplate, operator: str | None) ->
         description=domain_template.description,
         effective_date=domain_template.effective_date,
         expire_date=domain_template.expire_date,
-        version=domain_template.version,
         customer_id=domain_template.customer_id,
         customer_group_id=domain_template.customer_group_id,
     )
@@ -388,7 +378,6 @@ def _apply_domain_template_to_model(
     template.expire_date = domain_template.expire_date
     template.customer_id = domain_template.customer_id
     template.customer_group_id = domain_template.customer_group_id
-    template.version = domain_template.version
     template.updated_by = operator
     template.rules.clear()
     for rule in domain_template._rule_items():
@@ -411,7 +400,6 @@ def _build_domain_template_from_model(template: BillingTemplate) -> DomainTempla
         description=template.description,
         customer_id=template.customer_id,
         customer_group_id=template.customer_group_id,
-        version=template.version,
         rules=rules,
         id=template.id,
     )
@@ -497,7 +485,6 @@ def _to_quote_model(quote: DomainQuote) -> BillingQuote:
     return BillingQuote(
         quote_code=quote.quote_code,
         template_id=quote.template_id,
-        template_version=quote.template_version,
         scope_type=quote.scope_type.value,
         scope_priority=quote.scope_priority,
         customer_id=quote.customer_id,
