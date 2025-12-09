@@ -92,6 +92,7 @@ class CreateBillingTemplateUseCase:
             )
 
         logger.info("billing template created", template_code=orm_template.template_code, template_id=orm_template.id)
+        await self._session.refresh(orm_template)
         return orm_template
 
 
@@ -142,6 +143,7 @@ class UpdateBillingTemplateUseCase:
             "billing template updated",
             template_id=template.id,
         )
+        await self._session.refresh(template)
         return template
 
 
