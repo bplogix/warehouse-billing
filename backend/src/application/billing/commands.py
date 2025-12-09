@@ -5,22 +5,20 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from src.domain.billing.entities import (
-    DecimalInput,
     PricingMode,
     QuoteStatus,
     RuleCategory,
     RuleChannel,
     RuleUnit,
-    TemplateStatus,
     TemplateType,
 )
 
 
 @dataclass(slots=True)
 class TemplateRuleTierInput:
-    min_value: DecimalInput
-    max_value: DecimalInput | None
-    price: DecimalInput
+    min_value: int
+    max_value: int | None
+    price: int
     description: str | None = None
 
 
@@ -32,7 +30,7 @@ class TemplateRuleInput:
     channel: RuleChannel
     unit: RuleUnit
     pricing_mode: PricingMode
-    price: DecimalInput | None = None
+    price: int | None = None
     tiers: Sequence[TemplateRuleTierInput] | None = None
     description: str | None = None
     support_only: bool = False
@@ -43,12 +41,12 @@ class CreateBillingTemplateCommand:
     template_code: str
     template_name: str
     template_type: TemplateType
-    business_domain: str
     effective_date: datetime
+    business_domain: str = "WAREHOUSE"
     expire_date: datetime | None = None
     description: str | None = None
     customer_id: int | None = None
-    customer_group_ids: Sequence[int] | None = None
+    customer_group_id: int | None = None
     rules: Sequence[TemplateRuleInput] = field(default_factory=list)
 
 
@@ -61,7 +59,7 @@ class UpdateBillingTemplateCommand:
     expire_date: datetime | None = None
     description: str | None = None
     customer_id: int | None = None
-    customer_group_ids: Sequence[int] | None = None
+    customer_group_id: int | None = None
     rules: Sequence[TemplateRuleInput] = field(default_factory=list)
 
 
@@ -69,18 +67,10 @@ class UpdateBillingTemplateCommand:
 class QueryBillingTemplatesCommand:
     template_type: TemplateType
     keyword: str | None = None
-    status: TemplateStatus | None = None
     customer_id: int | None = None
     customer_group_id: int | None = None
     limit: int = 20
     offset: int = 0
-
-
-@dataclass(slots=True)
-class ChangeTemplateStatusCommand:
-    template_id: int
-    version: int
-    target_status: TemplateStatus
 
 
 @dataclass(slots=True)

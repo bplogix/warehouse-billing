@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypedDict
 
 from sqlalchemy import (
     BigInteger,
@@ -11,7 +10,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    Numeric,
     SmallInteger,
     String,
     Text,
@@ -20,13 +18,60 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.domain.billing.entities import QuoteStatus, TemplateStatus
+from src.domain.billing.entities import QuoteStatus
 
 from .base import AuditMixin, Base
 
 if TYPE_CHECKING:
     from .customer import Customer, CustomerGroup
     from .domain import BusinessDomain
+
+
+class TemplateRuleTierRecord(TypedDict):
+    """JSON structure stored for tier definition."""
+
+    min_value: int
+    max_value: int | None
+    price: int
+    description: str | None
+
+
+class QuoteTemplatePayload(TypedDict):
+    templateCode: str
+    templateName: str
+    templateType: str
+    businessDomain: str
+    description: str | None
+    effectiveDate: str
+    expireDate: str | None
+    version: int
+    customerId: int | None
+    customerGroupId: int | None
+
+
+class QuoteRuleTierPayload(TypedDict):
+    minValue: int
+    maxValue: int | None
+    price: int
+    description: str | None
+
+
+class QuoteRulePayload(TypedDict):
+    chargeCode: str
+    chargeName: str
+    category: str
+    channel: str
+    unit: str
+    pricingMode: str
+    price: int | None
+    tiers: list[QuoteRuleTierPayload] | None
+    description: str | None
+    supportOnly: bool
+
+
+class BillingQuotePayload(TypedDict):
+    template: QuoteTemplatePayload
+    rules: list[QuoteRulePayload]
 
 
 class BillingTemplate(AuditMixin, Base):
@@ -49,9 +94,6 @@ class BillingTemplate(AuditMixin, Base):
     effective_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default=TemplateStatus.DRAFT.value, server_default=TemplateStatus.DRAFT.value
-    )
     customer_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customers.id"))
     customer_group_ids: Mapped[list[int] | None] = mapped_column(JSONB)
 
@@ -81,8 +123,8 @@ class BillingTemplateRule(AuditMixin, Base):
     channel: Mapped[str] = mapped_column(String(32), nullable=False)
     unit: Mapped[str] = mapped_column(String(32), nullable=False)
     pricing_mode: Mapped[str] = mapped_column(String(16), nullable=False)
-    price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
-    tiers: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    price: Mapped[int | None] = mapped_column(BigInteger)
+    tiers: Mapped[list[TemplateRuleTierRecord] | None] = mapped_column(JSONB)
     description: Mapped[str | None] = mapped_column(Text)
     support_only: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
 
@@ -114,8 +156,7 @@ class BillingQuote(AuditMixin, Base):
     )
     effective_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-
+    payload: Mapped[BillingQuotePayload] = mapped_column(JSONB, nullable=False)
     template: Mapped[BillingTemplate] = relationship(back_populates="quotes")
     business_domain_rel: Mapped[BusinessDomain] = relationship()
     customer: Mapped[Customer | None] = relationship()

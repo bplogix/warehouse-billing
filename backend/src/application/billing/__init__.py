@@ -1,7 +1,6 @@
 """Application layer for billing templates and quotes."""
 
 from .commands import (
-    ChangeTemplateStatusCommand,
     CreateBillingTemplateCommand,
     QueryBillingQuotesCommand,
     QueryBillingTemplatesCommand,
@@ -10,8 +9,8 @@ from .commands import (
     UpdateBillingTemplateCommand,
 )
 from .use_cases import (
-    ChangeTemplateStatusUseCase,
     CreateBillingTemplateUseCase,
+    DeleteBillingTemplateUseCase,
     GetBillingQuoteDetailUseCase,
     GetBillingTemplateDetailUseCase,
     QueryBillingQuotesUseCase,
@@ -25,11 +24,10 @@ __all__ = [
     "CreateBillingTemplateCommand",
     "UpdateBillingTemplateCommand",
     "QueryBillingTemplatesCommand",
-    "ChangeTemplateStatusCommand",
     "QueryBillingQuotesCommand",
     "CreateBillingTemplateUseCase",
     "UpdateBillingTemplateUseCase",
-    "ChangeTemplateStatusUseCase",
+    "DeleteBillingTemplateUseCase",
     "QueryBillingTemplatesUseCase",
     "GetBillingTemplateDetailUseCase",
     "QueryBillingQuotesUseCase",

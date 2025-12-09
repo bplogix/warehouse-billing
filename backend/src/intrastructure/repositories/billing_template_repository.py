@@ -6,7 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.domain.billing.entities import TemplateStatus, TemplateType
+from src.domain.billing.entities import TemplateType
 from src.intrastructure.database.models import BillingTemplate
 
 
@@ -53,7 +53,6 @@ class BillingTemplateRepository:
         template_type: TemplateType,
         business_domains: Sequence[str],
         keyword: str | None,
-        status: TemplateStatus | None,
         customer_id: int | None,
         customer_group_id: int | None,
         limit: int,
@@ -69,8 +68,9 @@ class BillingTemplateRepository:
         stmt = stmt.where(BillingTemplate.template_type == template_type.value)
         count_stmt = count_stmt.where(BillingTemplate.template_type == template_type.value)
 
-        stmt = stmt.where(BillingTemplate.business_domain.in_(business_domains))
-        count_stmt = count_stmt.where(BillingTemplate.business_domain.in_(business_domains))
+        normalized_domains = [domain.lower() for domain in business_domains]
+        stmt = stmt.where(func.lower(BillingTemplate.business_domain).in_(normalized_domains))
+        count_stmt = count_stmt.where(func.lower(BillingTemplate.business_domain).in_(normalized_domains))
 
         if keyword:
             like = f"%{keyword}%"
@@ -80,10 +80,6 @@ class BillingTemplateRepository:
             )
             stmt = stmt.where(condition)
             count_stmt = count_stmt.where(condition)
-
-        if status:
-            stmt = stmt.where(BillingTemplate.status == status.value)
-            count_stmt = count_stmt.where(BillingTemplate.status == status.value)
 
         if customer_id is not None:
             stmt = stmt.where(BillingTemplate.customer_id == customer_id)

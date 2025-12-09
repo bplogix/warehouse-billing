@@ -62,7 +62,7 @@ class ExternalMySQLDatabase:
         if self._engine is None:
             return
         try:
-            async with self._engine.begin() as connection:
+            async with self._engine.connect() as connection:
                 await connection.execute(text("SELECT 1"))
         except SQLAlchemyError:
             logger.exception("external mysql connection failed")

@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any, cast
 
@@ -16,19 +15,10 @@ class BillingDomainError(ValueError):
     """Domain level invariant violation."""
 
 
-DecimalInput = Decimal | float | int | str
-
-
 class TemplateType(str, Enum):
     GLOBAL = "GLOBAL"
     GROUP = "GROUP"
     CUSTOMER = "CUSTOMER"
-
-
-class TemplateStatus(str, Enum):
-    DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
 
 
 class PricingMode(str, Enum):
@@ -82,46 +72,19 @@ SUPPORT_ONLY_CATEGORIES = {RuleCategory.TRANSPORT, RuleCategory.MANUAL}
 FLAT_ONLY_CATEGORIES = {RuleCategory.INBOUND_OUTBOUND, RuleCategory.RETURN, RuleCategory.MATERIAL}
 
 
-def _to_decimal(value: DecimalInput | None, field_name: str) -> Decimal | None:
-    if value is None:
-        return None
-    if isinstance(value, Decimal):
-        return value
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, ValueError) as exc:  # pragma: no cover - defensive branch
-        raise BillingDomainError(f"invalid decimal for {field_name}") from exc
-
-
-def _normalize_int_list(values: Sequence[int] | None) -> list[int]:
-    if not values:
-        return []
-    seen: set[int] = set()
-    ordered: list[int] = []
-    for val in values:
-        if val in seen:
-            continue
-        seen.add(val)
-        ordered.append(val)
-    return ordered
-
-
-def _ensure_positive(value: Decimal, field_name: str) -> None:
+def _ensure_positive(value: int, field_name: str) -> None:
     if value < 0:
         raise BillingDomainError(f"{field_name} must be non-negative")
 
 
 @dataclass(slots=True)
 class TemplateRuleTier:
-    min_value: DecimalInput
-    max_value: DecimalInput | None
-    price: DecimalInput
+    min_value: int
+    max_value: int | None
+    price: int
     description: str | None = None
 
     def __post_init__(self) -> None:
-        self.min_value = _to_decimal(self.min_value, "min_value") or Decimal("0")
-        self.max_value = _to_decimal(self.max_value, "max_value")
-        self.price = _to_decimal(self.price, "price") or Decimal("0")
         _ensure_positive(self.min_value, "min_value")
         _ensure_positive(self.price, "price")
         if self.max_value is not None and self.max_value <= self.min_value:
@@ -129,9 +92,9 @@ class TemplateRuleTier:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "minValue": str(self.min_value),
-            "maxValue": str(self.max_value) if self.max_value is not None else None,
-            "price": str(self.price),
+            "minValue": self.min_value,
+            "maxValue": self.max_value,
+            "price": self.price,
             "description": self.description,
         }
 
@@ -144,7 +107,7 @@ class TemplateRule:
     channel: RuleChannel
     unit: RuleUnit
     pricing_mode: PricingMode
-    price: DecimalInput | None = None
+    price: int | None = None
     tiers: Sequence[TemplateRuleTier | dict[str, Any]] | None = None
     description: str | None = None
     support_only: bool = False
@@ -154,7 +117,6 @@ class TemplateRule:
         self.charge_name = self.charge_name.strip()
         if not self.charge_code or not self.charge_name:
             raise BillingDomainError("charge_code and charge_name are required")
-        self.price = _to_decimal(self.price, "price")
         self.tiers = [self._coerce_tier(tier) for tier in (self.tiers or [])]
         self._validate_struct()
 
@@ -194,15 +156,15 @@ class TemplateRule:
         return cast(list[TemplateRuleTier], self.tiers)
 
     def _validate_tiers(self) -> None:
-        tiers = sorted(self._tier_items(), key=lambda item: cast(Decimal, item.min_value))
-        last_max: Decimal | None = None
+        tiers = sorted(self._tier_items(), key=lambda item: item.min_value)
+        last_max: int | None = None
         for idx, tier in enumerate(tiers):
-            min_value = cast(Decimal, tier.min_value)
+            min_value = tier.min_value
             if idx > 0 and last_max is not None and min_value < last_max:
                 raise BillingDomainError("tier ranges cannot overlap")
             if idx > 0 and last_max is None:
                 raise BillingDomainError("unbounded tier must be last entry")
-            last_max = cast(Decimal | None, tier.max_value)
+            last_max = tier.max_value
         self.tiers = tiers
 
     def to_dict(self) -> dict[str, Any]:
@@ -213,7 +175,7 @@ class TemplateRule:
             "channel": self.channel.value,
             "unit": self.unit.value,
             "pricingMode": self.pricing_mode.value,
-            "price": str(self.price) if self.price is not None else None,
+            "price": self.price,
             "tiers": [tier.to_dict() for tier in self._tier_items()] or None,
             "description": self.description,
             "supportOnly": self.support_only,
@@ -244,8 +206,7 @@ class BillingTemplate:
     expire_date: datetime | None
     description: str | None = None
     customer_id: int | None = None
-    customer_group_ids: Sequence[int] | None = None
-    status: TemplateStatus = TemplateStatus.DRAFT
+    customer_group_id: int | None = None
     version: int = 1
     rules: Sequence[TemplateRule | dict[str, Any]] = field(default_factory=list)
     id: int | None = None
@@ -256,7 +217,6 @@ class BillingTemplate:
         self.business_domain = self.business_domain.strip()
         if not self.template_code or not self.template_name or not self.business_domain:
             raise BillingDomainError("template_code, template_name and business_domain are required")
-        self.customer_group_ids = _normalize_int_list(self.customer_group_ids)
         self.rules = [self._coerce_rule(rule) for rule in self.rules]
         self._ensure_period()
         self._ensure_scope()
@@ -280,14 +240,14 @@ class BillingTemplate:
         if self.template_type is TemplateType.CUSTOMER:
             if self.customer_id is None:
                 raise BillingDomainError("customer template requires customer_id")
-            if self.customer_group_ids:
-                raise BillingDomainError("customer template cannot set group ids")
+            if self.customer_group_id is not None:
+                raise BillingDomainError("customer template cannot set group id")
         elif self.template_type is TemplateType.GROUP:
-            if not self.customer_group_ids:
-                raise BillingDomainError("group template requires at least one group id")
+            if self.customer_group_id is None:
+                raise BillingDomainError("group template requires customer_group_id")
             self.customer_id = None
         elif self.template_type is TemplateType.GLOBAL:
-            if self.customer_id is not None or self.customer_group_ids:
+            if self.customer_id is not None or self.customer_group_id is not None:
                 raise BillingDomainError("global template cannot bind customer info")
 
     def _ensure_rules(self) -> None:
@@ -305,16 +265,6 @@ class BillingTemplate:
     def bump_version(self) -> None:
         self.version += 1
 
-    def activate(self) -> None:
-        if self.status != TemplateStatus.DRAFT:
-            raise BillingDomainError("only draft template can transition to active")
-        self.status = TemplateStatus.ACTIVE
-
-    def deactivate(self) -> None:
-        if self.status != TemplateStatus.ACTIVE:
-            raise BillingDomainError("only active template can be deactivated")
-        self.status = TemplateStatus.INACTIVE
-
     def schedule(self, effective_date: datetime, expire_date: datetime | None) -> None:
         self.effective_date = effective_date
         self.expire_date = expire_date
@@ -329,11 +279,8 @@ class BillingTemplate:
                 raise BillingDomainError("customer quote requires customer_id")
             return QuoteScope.CUSTOMER, SCOPE_PRIORITY[QuoteScope.CUSTOMER], resolved_customer_id, None
         if self.template_type is TemplateType.GROUP:
-            available_groups = list(self.customer_group_ids or [])
-            resolved_group_id = customer_group_id
-            if resolved_group_id is None and len(available_groups) == 1:
-                resolved_group_id = available_groups[0]
-            if resolved_group_id is None or resolved_group_id not in available_groups:
+            resolved_group_id = customer_group_id or self.customer_group_id
+            if resolved_group_id is None:
                 raise BillingDomainError("group quote requires a valid customer_group_id")
             return QuoteScope.GROUP, SCOPE_PRIORITY[QuoteScope.GROUP], None, resolved_group_id
         return QuoteScope.GLOBAL, SCOPE_PRIORITY[QuoteScope.GLOBAL], None, None
@@ -349,9 +296,8 @@ class BillingTemplate:
                 "effectiveDate": self.effective_date.isoformat(),
                 "expireDate": self.expire_date.isoformat() if self.expire_date else None,
                 "version": self.version,
-                "status": self.status.value,
                 "customerId": self.customer_id,
-                "customerGroupIds": list(self.customer_group_ids or []),
+                "customerGroupId": self.customer_group_id,
             },
             "rules": [rule.to_dict() for rule in self._rule_items()],
         }
@@ -367,9 +313,8 @@ class BillingTemplate:
             "effectiveDate": self.effective_date.isoformat(),
             "expireDate": self.expire_date.isoformat() if self.expire_date else None,
             "version": self.version,
-            "status": self.status.value,
             "customerId": self.customer_id,
-            "customerGroupIds": list(self.customer_group_ids or []),
+            "customerGroupId": self.customer_group_id,
             "rules": [rule.to_dict() for rule in self._rule_items()],
         }
 

@@ -52,7 +52,7 @@ class PostgresDatabase:
             raise RuntimeError("Postgres engine was not initialized")
 
         try:
-            async with self._engine.begin() as connection:
+            async with self._engine.connect() as connection:
                 await connection.execute(text("SELECT 1"))
         except SQLAlchemyError as exc:
             logger.exception("postgres connection failed", exc=exc)

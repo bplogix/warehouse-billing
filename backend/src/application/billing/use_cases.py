@@ -7,7 +7,6 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.billing.commands import (
-    ChangeTemplateStatusCommand,
     CreateBillingTemplateCommand,
     QueryBillingQuotesCommand,
     QueryBillingTemplatesCommand,
@@ -26,11 +25,11 @@ from src.domain.billing.entities import (
     RuleUnit,
     TemplateRule,
     TemplateRuleTier,
-    TemplateStatus,
     TemplateType,
 )
 from src.domain.customer import BusinessDomainGuard
 from src.intrastructure.database.models import BillingQuote, BillingTemplate, BillingTemplateRule
+from src.intrastructure.database.models.billing import TemplateRuleTierRecord
 from src.intrastructure.repositories import BillingQuoteRepository, BillingTemplateRepository
 from src.shared.logger.factories import app_logger
 from src.shared.utils.random import generate_urlsafe_code
@@ -63,9 +62,6 @@ class CreateBillingTemplateUseCase:
         guard = BusinessDomainGuard.from_context()
         guard.ensure_access(cmd.business_domain)
 
-        if cmd.template_type is TemplateType.GLOBAL and await self._template_repo.exists_global_template():
-            raise BillingDomainError("global template already exists")
-
         domain_template = _build_domain_template_from_payload(
             template_code=cmd.template_code,
             template_name=cmd.template_name,
@@ -76,14 +72,25 @@ class CreateBillingTemplateUseCase:
             description=cmd.description,
             customer_id=cmd.customer_id,
             customer_group_ids=cmd.customer_group_ids,
-            status=TemplateStatus.DRAFT,
             version=1,
             rules=cmd.rules,
         )
         orm_template = _to_template_model(domain_template, operator=operator)
 
         async with self._session.begin():
+            if cmd.template_type is TemplateType.GLOBAL and await self._template_repo.exists_global_template():
+                raise BillingDomainError("global template already exists")
+
             await self._template_repo.add(orm_template)
+            domain_template.id = orm_template.id
+            # 保存时立即生成报价单
+            quote_repo = BillingQuoteRepository(self._session)
+            await _regenerate_quotes(
+                template=orm_template,
+                domain_template=domain_template,
+                repo=quote_repo,
+                operator=operator,
+            )
 
         logger.info("billing template created", template_code=orm_template.template_code, template_id=orm_template.id)
         return orm_template
@@ -100,99 +107,48 @@ class UpdateBillingTemplateUseCase:
         cmd: UpdateBillingTemplateCommand,
         operator: str | None = None,
     ) -> BillingTemplate | None:
-        template = await self._template_repo.get_by_id(cmd.template_id, with_rules=True)
-        if template is None:
-            return None
-
-        guard = BusinessDomainGuard.from_context()
-        guard.ensure_access(template.business_domain)
-
-        if template.version != cmd.version:
-            raise BillingDomainError("template version mismatch")
-
-        template_type = TemplateType(template.template_type)
-        status = TemplateStatus(template.status)
-        domain_template = _build_domain_template_from_payload(
-            template_code=template.template_code,
-            template_name=cmd.template_name,
-            template_type=template_type,
-            business_domain=template.business_domain,
-            effective_date=cmd.effective_date,
-            expire_date=cmd.expire_date,
-            description=cmd.description,
-            customer_id=cmd.customer_id,
-            customer_group_ids=cmd.customer_group_ids,
-            status=status,
-            version=template.version,
-            rules=cmd.rules,
-            template_id=template.id,
-        )
-        domain_template.bump_version()
-        refresh_quotes = status is TemplateStatus.ACTIVE
-
         async with self._session.begin():
+            template = await self._template_repo.get_by_id(cmd.template_id, with_rules=True)
+            if template is None:
+                return None
+
+            guard = BusinessDomainGuard.from_context()
+            guard.ensure_access(template.business_domain)
+
+            if template.version != cmd.version:
+                raise BillingDomainError("template version mismatch")
+
+            template_type = TemplateType(template.template_type)
+            domain_template = _build_domain_template_from_payload(
+                template_code=template.template_code,
+                template_name=cmd.template_name,
+                template_type=template_type,
+                business_domain=template.business_domain,
+                effective_date=cmd.effective_date,
+                expire_date=cmd.expire_date,
+                description=cmd.description,
+                customer_id=cmd.customer_id,
+                customer_group_ids=cmd.customer_group_ids,
+                version=template.version,
+                rules=cmd.rules,
+                template_id=template.id,
+            )
+            domain_template.bump_version()
+
             _apply_domain_template_to_model(domain_template, template, operator=operator)
-            if refresh_quotes:
-                await _regenerate_quotes(
-                    template=template,
-                    domain_template=domain_template,
-                    repo=self._quote_repo,
-                    operator=operator,
-                )
+            # 更新时旧报价单失效，生成新报价单
+            await _regenerate_quotes(
+                template=template,
+                domain_template=domain_template,
+                repo=self._quote_repo,
+                operator=operator,
+            )
 
         logger.info(
             "billing template updated",
             template_id=template.id,
             version=template.version,
-            refresh_quotes=refresh_quotes,
         )
-        return template
-
-
-class ChangeTemplateStatusUseCase:
-    def __init__(self, session: AsyncSession) -> None:
-        self._session = session
-        self._template_repo = BillingTemplateRepository(session)
-        self._quote_repo = BillingQuoteRepository(session)
-
-    async def execute(
-        self,
-        cmd: ChangeTemplateStatusCommand,
-        operator: str | None = None,
-    ) -> BillingTemplate | None:
-        template = await self._template_repo.get_by_id(cmd.template_id, with_rules=True)
-        if template is None:
-            return None
-
-        guard = BusinessDomainGuard.from_context()
-        guard.ensure_access(template.business_domain)
-
-        if template.version != cmd.version:
-            raise BillingDomainError("template version mismatch")
-
-        domain_template = _build_domain_template_from_model(template)
-        target = cmd.target_status
-        if target is TemplateStatus.ACTIVE:
-            domain_template.activate()
-        elif target is TemplateStatus.INACTIVE:
-            domain_template.deactivate()
-        else:
-            raise BillingDomainError(f"unsupported target status {target.value}")
-
-        async with self._session.begin():
-            template.status = domain_template.status.value
-            template.updated_by = operator
-            if target is TemplateStatus.ACTIVE:
-                await _regenerate_quotes(
-                    template=template,
-                    domain_template=domain_template,
-                    repo=self._quote_repo,
-                    operator=operator,
-                )
-            else:
-                await self._quote_repo.deactivate_by_template(template.id)
-
-        logger.info("template status updated", template_id=template.id, status=template.status)
         return template
 
 
@@ -204,11 +160,11 @@ class QueryBillingTemplatesUseCase:
     async def execute(self, cmd: QueryBillingTemplatesCommand) -> QueryTemplatesResult:
         guard = BusinessDomainGuard.from_context()
         domains = guard.allowed_domains
+        logger.info(f"业务域: {domains}")
         items, total = await self._template_repo.search(
             template_type=cmd.template_type,
             business_domains=domains,
             keyword=cmd.keyword,
-            status=cmd.status,
             customer_id=cmd.customer_id,
             customer_group_id=cmd.customer_group_id,
             limit=cmd.limit,
@@ -265,6 +221,46 @@ class GetBillingQuoteDetailUseCase:
         return quote
 
 
+class DeleteBillingTemplateUseCase:
+    """删除计费模板（软删除）."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._template_repo = BillingTemplateRepository(session)
+        self._quote_repo = BillingQuoteRepository(session)
+
+    async def execute(self, template_id: int, operator: str | None = None) -> bool:
+        """删除模板并失效关联报价单.
+
+        Args:
+            template_id: 模板ID
+            operator: 操作人
+
+        Returns:
+            bool: 是否删除成功，False 表示模板不存在
+
+        Raises:
+            BillingDomainError: 权限检查失败
+        """
+        async with self._session.begin():
+            template = await self._template_repo.get_by_id(template_id)
+            if template is None:
+                return False
+
+            # 权限检查
+            guard = BusinessDomainGuard.from_context()
+            guard.ensure_access(template.business_domain)
+
+            # 软删除模板
+            template.is_deleted = True
+            template.updated_by = operator
+            # 将关联报价单标记为 INACTIVE
+            await self._quote_repo.deactivate_by_template(template_id)
+
+        logger.info("billing template deleted", template_id=template_id, operator=operator)
+        return True
+
+
 def _build_domain_template_from_payload(
     *,
     template_code: str,
@@ -276,7 +272,6 @@ def _build_domain_template_from_payload(
     description: str | None,
     customer_id: int | None,
     customer_group_ids: Sequence[int] | None,
-    status: TemplateStatus,
     version: int,
     rules: Sequence[TemplateRuleInput],
     template_id: int | None = None,
@@ -292,7 +287,6 @@ def _build_domain_template_from_payload(
         description=description,
         customer_id=customer_id,
         customer_group_ids=customer_group_ids,
-        status=status,
         version=version,
         rules=domain_rules,
         id=template_id,
@@ -350,14 +344,13 @@ def _serialize_rule(rule: TemplateRule) -> BillingTemplateRule:
     return orm_rule
 
 
-def _serialize_tier(tier: TemplateRuleTier) -> dict[str, str | None]:
-    max_value = str(tier.max_value) if tier.max_value is not None else None
-    return {
-        "min_value": str(tier.min_value),
-        "max_value": max_value,
-        "price": str(tier.price),
-        "description": tier.description,
-    }
+def _serialize_tier(tier: TemplateRuleTier) -> TemplateRuleTierRecord:
+    return TemplateRuleTierRecord(
+        min_value=tier.min_value,
+        max_value=tier.max_value,
+        price=tier.price,
+        description=tier.description,
+    )
 
 
 def _to_template_model(domain_template: DomainTemplate, operator: str | None) -> BillingTemplate:
@@ -370,7 +363,6 @@ def _to_template_model(domain_template: DomainTemplate, operator: str | None) ->
         effective_date=domain_template.effective_date,
         expire_date=domain_template.expire_date,
         version=domain_template.version,
-        status=domain_template.status.value,
         customer_id=domain_template.customer_id,
         customer_group_ids=list(domain_template.customer_group_ids or []),
     )
@@ -397,7 +389,6 @@ def _apply_domain_template_to_model(
     template.customer_id = domain_template.customer_id
     template.customer_group_ids = list(domain_template.customer_group_ids or [])
     template.version = domain_template.version
-    template.status = domain_template.status.value
     template.updated_by = operator
     template.rules.clear()
     for rule in domain_template._rule_items():
@@ -409,7 +400,6 @@ def _apply_domain_template_to_model(
 
 def _build_domain_template_from_model(template: BillingTemplate) -> DomainTemplate:
     template_type = TemplateType(template.template_type)
-    status = TemplateStatus(template.status)
     rules = [_deserialize_rule(rule) for rule in template.rules]
     return DomainTemplate(
         template_code=template.template_code,
@@ -421,7 +411,6 @@ def _build_domain_template_from_model(template: BillingTemplate) -> DomainTempla
         description=template.description,
         customer_id=template.customer_id,
         customer_group_ids=list(template.customer_group_ids or []),
-        status=status,
         version=template.version,
         rules=rules,
         id=template.id,
@@ -455,13 +444,12 @@ async def _regenerate_quotes(
     quotes = _build_domain_quotes(domain_template)
     orm_quotes: list[BillingQuote] = []
     for quote in quotes:
-        repo_kwargs = {
-            "scope_type": quote.scope_type,
-            "business_domain": quote.business_domain,
-            "customer_id": quote.customer_id,
-            "customer_group_id": quote.customer_group_id,
-        }
-        await repo.deactivate_scope_quotes(**repo_kwargs)
+        await repo.deactivate_scope_quotes(
+            scope_type=quote.scope_type,
+            business_domain=quote.business_domain,
+            customer_id=quote.customer_id,
+            customer_group_id=quote.customer_group_id,
+        )
         orm_quote = _to_quote_model(quote)
         orm_quote.template_id = template.id
         orm_quote.created_by = operator
