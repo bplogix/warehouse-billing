@@ -20,7 +20,7 @@ import {
 import { useBillingStore } from '@/modules/billing/stores/useBillingStore'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
 import { useWarehouseStore } from '@/stores/useWarehouseStore'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type LedgerEntry = {
   id: string
@@ -72,7 +72,8 @@ const matchRuleToOperation = (
 const LedgerModule = () => {
   const { customers } = useCustomerStore()
   const { logs } = useWarehouseStore()
-  const { templates } = useBillingStore()
+  const templates = useBillingStore((state) => state.templates)
+  const fetchTemplates = useBillingStore((state) => state.fetchTemplates)
   const [customerId, setCustomerId] = useState<number | ''>('')
 
   const customerMap = useMemo(() => {
@@ -126,6 +127,21 @@ const LedgerModule = () => {
     (sum, entry) => sum + entry.amount,
     0,
   )
+
+  useEffect(() => {
+    fetchTemplates({ templateType: TemplateType.GLOBAL, limit: 1 }).catch(
+      () => {},
+    )
+  }, [fetchTemplates])
+
+  useEffect(() => {
+    if (customerId === '') return
+    fetchTemplates({
+      templateType: TemplateType.CUSTOMER,
+      customerId,
+      limit: 1,
+    }).catch(() => {})
+  }, [customerId, fetchTemplates])
 
   return (
     <div className="space-y-4 p-4">

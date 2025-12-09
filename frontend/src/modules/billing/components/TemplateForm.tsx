@@ -114,7 +114,7 @@ const generateTemplateCode = (type: TemplateType) => {
     case TemplateType.CUSTOMER:
       return `VIP-${getRandomSuffix()}`
     default:
-      return 'GENERAL'
+      return 'GLOBAL'
   }
 }
 
@@ -126,7 +126,7 @@ const buildDefaultValues = (
   templateName: type === TemplateType.GLOBAL ? '通用规则' : '',
   templateCode: generateTemplateCode(type),
   description: '',
-  effectiveDate: '',
+  effectiveDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
   expireDate: null,
   customerId: contextCustomerId ?? null,
   customerGroupIds: contextGroupId ? [contextGroupId] : [],
@@ -157,7 +157,7 @@ const TemplateForm = ({
   contextCustomerId,
   onSubmitTemplate,
 }: TemplateFormProps) => {
-  const { addTemplate, updateTemplate } = useBillingStore()
+  const { createTemplate, updateTemplate } = useBillingStore()
   const { customers } = useCustomerStore()
   const [activeRuleIndex, setActiveRuleIndex] = useState(0)
   const [activeTab, setActiveTab] = useState<string | undefined>(undefined)
@@ -196,7 +196,7 @@ const TemplateForm = ({
       form.reset({
         templateName: initialData.templateName,
         templateCode: codeValue,
-        description: initialData.description,
+        description: initialData.description ?? '',
         effectiveDate: initialData.effectiveDate,
         expireDate: initialData.expireDate || null,
         customerId: contextCustomerId ?? initialData.customerId ?? null,
@@ -302,9 +302,9 @@ const TemplateForm = ({
     }
 
     if (initialData) {
-      updateTemplate(initialData.id, payload)
+      await updateTemplate(initialData.id, payload)
     } else {
-      addTemplate(payload)
+      await createTemplate(payload)
     }
     onClose()
   }
@@ -813,11 +813,11 @@ const TemplateForm = ({
                   <TabsTrigger
                     key={rule.chargeCode}
                     value={rule.chargeCode}
-                    onMouseEnter={() => {
+                    className="justify-between rounded-md px-3 py-2 text-left data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold"
+                    onClick={() => {
                       setActiveRuleIndex(index)
                       setActiveTab(rule.chargeCode)
                     }}
-                    className="justify-between rounded-md px-3 py-2 text-left data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-semibold"
                   >
                     <span className="line-clamp-1">{rule.chargeName}</span>
                     <span className="text-xs text-muted-foreground">

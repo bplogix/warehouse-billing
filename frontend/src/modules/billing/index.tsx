@@ -13,7 +13,8 @@ import { useLocation } from 'react-router-dom'
 import TemplateForm from './components/TemplateForm'
 
 const BillingModule = () => {
-  const { templates, addTemplate, updateTemplate } = useBillingStore()
+  const { templates, fetchTemplates, createTemplate, updateTemplate } =
+    useBillingStore()
   const {
     customers,
     loading: customerLoading,
@@ -58,11 +59,32 @@ const BillingModule = () => {
 
   const filteredTemplates = useMemo(
     () =>
-      templates.filter(
-        (template) => template.templateType === currentTemplateType,
-      ),
-    [templates, currentTemplateType],
+      templates.filter((template) => {
+        if (template.templateType !== currentTemplateType) {
+          return false
+        }
+        if (currentTab === 'group' && activeGroupId != null) {
+          return template.customerGroupIds?.includes(activeGroupId) ?? false
+        }
+        if (currentTab === 'custom' && activeCustomerId != null) {
+          return template.customerId === activeCustomerId
+        }
+        return true
+      }),
+    [
+      templates,
+      currentTemplateType,
+      currentTab,
+      activeGroupId,
+      activeCustomerId,
+    ],
   )
+
+  useEffect(() => {
+    fetchTemplates({ templateType: TemplateType.GLOBAL, limit: 1 }).catch(
+      () => {},
+    )
+  }, [fetchTemplates])
 
   useEffect(() => {
     if (currentTab === 'group' && groups.length === 0 && !groupLoading) {
@@ -144,16 +166,53 @@ const BillingModule = () => {
     [customers, activeCustomerId],
   )
 
+  useEffect(() => {
+    if (currentTab !== 'group' || activeGroupId == null) return
+    fetchTemplates({
+      templateType: TemplateType.GROUP,
+      customerGroupId: activeGroupId,
+      limit: 1,
+    }).catch(() => {})
+  }, [currentTab, activeGroupId, fetchTemplates])
+
+  useEffect(() => {
+    if (currentTab !== 'custom' || activeCustomerId == null) return
+    fetchTemplates({
+      templateType: TemplateType.CUSTOMER,
+      customerId: activeCustomerId,
+      limit: 1,
+    }).catch(() => {})
+  }, [currentTab, activeCustomerId, fetchTemplates])
+
   const handleGroupSubmit = useCallback(
     async (payload: Omit<Template, 'id'>) => {
       if (!activeGroupId) return
-      if (activeGroupTemplate) {
-        updateTemplate(activeGroupTemplate.id, payload)
-      } else {
-        addTemplate(payload)
+      const finalPayload: Omit<Template, 'id'> = {
+        ...payload,
+        templateType: TemplateType.GROUP,
+        customerGroupIds:
+          payload.customerGroupIds && payload.customerGroupIds.length > 0
+            ? payload.customerGroupIds
+            : [activeGroupId],
       }
+      if (activeGroupTemplate) {
+        await updateTemplate(activeGroupTemplate.id, finalPayload)
+      } else {
+        await createTemplate(finalPayload)
+      }
+      await fetchTemplates({
+        templateType: TemplateType.GROUP,
+        customerGroupId: activeGroupId,
+        limit: 1,
+      })
     },
-    [activeGroupId, activeGroupTemplate, addTemplate, updateTemplate],
+    [
+      activeGroupId,
+      activeGroupTemplate,
+      createTemplate,
+      updateTemplate,
+      fetchTemplates,
+    ],
   )
 
   const handleCustomerSubmit = useCallback(
@@ -164,12 +223,23 @@ const BillingModule = () => {
         customerId: activeCustomerId,
       }
       if (activeCustomerTemplate) {
-        updateTemplate(activeCustomerTemplate.id, finalPayload)
+        await updateTemplate(activeCustomerTemplate.id, finalPayload)
       } else {
-        addTemplate(finalPayload)
+        await createTemplate(finalPayload)
       }
+      await fetchTemplates({
+        templateType: TemplateType.CUSTOMER,
+        customerId: activeCustomerId,
+        limit: 1,
+      })
     },
-    [activeCustomerId, activeCustomerTemplate, addTemplate, updateTemplate],
+    [
+      activeCustomerId,
+      activeCustomerTemplate,
+      createTemplate,
+      updateTemplate,
+      fetchTemplates,
+    ],
   )
 
   const typeLabel =

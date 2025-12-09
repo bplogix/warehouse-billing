@@ -118,4 +118,13 @@ export async function apiPut<T>(
   return body as T
 }
 
+export async function apiDelete<T>(url: string, config?: AxiosRequestConfig) {
+  const response = await http.delete<ApiResponse<T>>(url, config)
+  const body = response.data
+  if (body && typeof body === 'object' && 'data' in body) {
+    return (body as { data: T }).data
+  }
+  return body as T
+}
+
 export default http
