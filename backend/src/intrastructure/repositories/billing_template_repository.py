@@ -86,8 +86,8 @@ class BillingTemplateRepository:
             count_stmt = count_stmt.where(BillingTemplate.customer_id == customer_id)
 
         if customer_group_id is not None:
-            stmt = stmt.where(BillingTemplate.customer_group_ids.contains([customer_group_id]))
-            count_stmt = count_stmt.where(BillingTemplate.customer_group_ids.contains([customer_group_id]))
+            stmt = stmt.where(BillingTemplate.customer_group_id == customer_group_id)
+            count_stmt = count_stmt.where(BillingTemplate.customer_group_id == customer_group_id)
 
         stmt = stmt.order_by(BillingTemplate.id.desc()).offset(offset).limit(limit)
         result = await self._session.execute(stmt)

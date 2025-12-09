@@ -364,7 +364,7 @@ def _to_template_model(domain_template: DomainTemplate, operator: str | None) ->
         expire_date=domain_template.expire_date,
         version=domain_template.version,
         customer_id=domain_template.customer_id,
-        customer_group_ids=_as_group_list(domain_template.customer_group_id),
+        customer_group_id=domain_template.customer_group_id,
     )
     template.created_by = operator
     template.updated_by = operator
@@ -387,7 +387,7 @@ def _apply_domain_template_to_model(
     template.effective_date = domain_template.effective_date
     template.expire_date = domain_template.expire_date
     template.customer_id = domain_template.customer_id
-    template.customer_group_ids = _as_group_list(domain_template.customer_group_id)
+    template.customer_group_id = domain_template.customer_group_id
     template.version = domain_template.version
     template.updated_by = operator
     template.rules.clear()
@@ -410,23 +410,11 @@ def _build_domain_template_from_model(template: BillingTemplate) -> DomainTempla
         expire_date=template.expire_date,
         description=template.description,
         customer_id=template.customer_id,
-        customer_group_id=_extract_customer_group_id(template.customer_group_ids),
+        customer_group_id=template.customer_group_id,
         version=template.version,
         rules=rules,
         id=template.id,
     )
-
-# TODO: 新增的这两个方法是 用户组处理，但是可能和业务冲突
-def _as_group_list(group_id: int | None) -> list[int] | None:
-    if group_id is None:
-        return None
-    return [group_id]
-
-
-def _extract_customer_group_id(group_ids: Sequence[int] | None) -> int | None:
-    if not group_ids:
-        return None
-    return group_ids[0]
 
 
 def _deserialize_rule(rule: BillingTemplateRule) -> TemplateRule:

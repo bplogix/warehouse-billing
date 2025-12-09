@@ -9,14 +9,6 @@ from src.intrastructure.database.models import BillingQuote, BillingTemplate, Bi
 from src.intrastructure.database.models.billing import BillingQuotePayload, TemplateRuleTierRecord
 from src.presentation.schema.base import CamelModel
 
-# TODO: 新增的这两个方法是 用户组处理，但是可能和业务冲突
-
-def _first_group_id(group_ids: list[int] | None) -> int | None:
-    if not group_ids:
-        return None
-    return group_ids[0]
-
-
 # ============================================================================
 # Template Rule Schemas
 # ============================================================================
@@ -115,7 +107,7 @@ class BillingTemplateListItemSchema(CamelModel):
             expireDate=model.expire_date,
             version=model.version,
             customerId=model.customer_id,
-            customerGroupId=_first_group_id(model.customer_group_ids),
+            customerGroupId=model.customer_group_id,
             createdAt=model.created_at,
             updatedAt=model.updated_at,
         )
@@ -152,7 +144,7 @@ class BillingTemplateDetailSchema(CamelModel):
             expireDate=model.expire_date,
             version=model.version,
             customerId=model.customer_id,
-            customerGroupId=_first_group_id(model.customer_group_ids),
+            customerGroupId=model.customer_group_id,
             rules=[TemplateRuleSchema.from_model(rule) for rule in model.rules],
             createdAt=model.created_at,
             updatedAt=model.updated_at,

@@ -82,7 +82,7 @@ class BillingTemplate(AuditMixin, Base):
         UniqueConstraint("template_code", name="uq_billing_template_code"),
         Index("idx_billing_template_type", "template_type"),
         Index("idx_billing_template_customer", "customer_id"),
-        Index("idx_billing_template_group_ids", "customer_group_ids", postgresql_using="gin"),
+        Index("idx_billing_template_group_id", "customer_group_id"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -95,7 +95,7 @@ class BillingTemplate(AuditMixin, Base):
     expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     customer_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customers.id"))
-    customer_group_ids: Mapped[list[int] | None] = mapped_column(JSONB)
+    customer_group_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("customer_groups.id"))
 
     business_domain_rel: Mapped[BusinessDomain] = relationship()
     customer: Mapped[Customer | None] = relationship()
