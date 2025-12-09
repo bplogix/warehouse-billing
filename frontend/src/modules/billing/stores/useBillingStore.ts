@@ -28,36 +28,38 @@ type BillingStore = {
   deleteTemplate: (id: number) => Promise<void>
 }
 
-const normalizeTemplate = (template: Template): Template => ({
-  ...template,
-  description: template.description ?? '',
-  expireDate: template.expireDate ?? null,
-  customerGroupIds:
-    template.customerGroupIds && template.customerGroupIds.length > 0
-      ? template.customerGroupIds
-      : undefined,
-  customerId:
-    template.customerId === null || template.customerId === undefined
-      ? undefined
-      : template.customerId,
-  rules: (template.rules ?? []).map((rule) => {
-    const supportOnly = rule.supportOnly ?? false
-    return {
-      ...rule,
-      description: rule.description ?? '',
-      supportOnly,
-      price: supportOnly
-        ? null
-        : typeof rule.price === 'number'
-          ? rule.price
-          : 0,
-      tiers: (rule.tiers ?? []).map((tier) => ({
-        ...tier,
-        description: tier.description ?? '',
-      })),
-    }
-  }),
-})
+const normalizeTemplate = (template: Template): Template => {
+  const normalizedGroupId =
+    template.customerGroupId ??
+    (template.customerGroupId ? template.customerGroupId : undefined)
+  return {
+    ...template,
+    description: template.description ?? '',
+    expireDate: template.expireDate ?? null,
+    customerGroupId: normalizedGroupId,
+    customerId:
+      template.customerId === null || template.customerId === undefined
+        ? undefined
+        : template.customerId,
+    rules: (template.rules ?? []).map((rule) => {
+      const supportOnly = rule.supportOnly ?? false
+      return {
+        ...rule,
+        description: rule.description ?? '',
+        supportOnly,
+        price: supportOnly
+          ? null
+          : typeof rule.price === 'number'
+            ? rule.price
+            : 0,
+        tiers: (rule.tiers ?? []).map((tier) => ({
+          ...tier,
+          description: tier.description ?? '',
+        })),
+      }
+    }),
+  }
+}
 
 const buildCreatePayload = (
   payload: Omit<Template, 'id'>,
@@ -69,7 +71,7 @@ const buildCreatePayload = (
   effectiveDate: payload.effectiveDate,
   expireDate: payload.expireDate,
   customerId: payload.customerId ?? null,
-  customerGroupIds: payload.customerGroupIds ?? null,
+  customerGroupId: payload.customerGroupId ?? null,
   rules: payload.rules,
 })
 
@@ -80,9 +82,8 @@ const buildUpdatePayload = (
   description: payload.description ?? '',
   effectiveDate: payload.effectiveDate,
   expireDate: payload.expireDate,
-  version: payload.version,
   customerId: payload.customerId ?? null,
-  customerGroupIds: payload.customerGroupIds ?? null,
+  customerGroupId: payload.customerGroupId ?? null,
   rules: payload.rules,
 })
 
@@ -92,7 +93,7 @@ const matchesQuery = (template: Template, query: TemplateListQuery) => {
     return template.customerId === query.customerId
   }
   if (query.customerGroupId != null) {
-    return template.customerGroupIds?.includes(query.customerGroupId) ?? false
+    return template.customerGroupId === query.customerGroupId
   }
   return true
 }
@@ -107,6 +108,10 @@ export const useBillingStore = create<BillingStore>((set) => ({
     try {
       const res = await fetchBillingTemplates(query)
       const normalized = res.items.map(normalizeTemplate)
+      if (normalized.length === 0) {
+        set({ total: res.total })
+        return normalized
+      }
       set((state) => {
         const incomingIds = new Set(normalized.map((tpl) => tpl.id))
         const filteredExisting = state.templates.filter(

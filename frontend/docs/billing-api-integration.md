@@ -33,7 +33,7 @@
 - `expireDate`: string (ISO \| null，可为空表示长期有效)
 - `version`: number
 - `rules`: TemplateRule[]
-- `customerGroupIds?`: number[]（仅 GROUP）
+- `customerGroupId?`: number（仅 GROUP）
 - `customerId?`: number（仅 CUSTOMER）
 
 ### TemplateRule
@@ -59,7 +59,7 @@
 
 - 列表页：根据路由 tab 请求 `templateType` 对应的列表；支持 `keyword`、客户/分组过滤；显示 total。
 - 详情/编辑：点击编辑拉取详情；保存调用 PUT。
-- 创建：依据当前 tab 写入 `templateType`，GROUP 要求 `customerGroupIds`，CUSTOMER 要求 `customerId`，GLOBAL 固定唯一（可由后端限制只能有 1 条）。
+- 创建：依据当前 tab 写入 `templateType`，GROUP 要求 `customerGroupId`，CUSTOMER 要求 `customerId`，GLOBAL 固定唯一（可由后端限制只能有 1 条）。
 - 截止日期：空值表示长期有效，返回 `null` 即可。
 - 运输/人工录入：仅需要告诉前端是否支持该项，`supportOnly=true` 时前端不渲染价格编辑。
 - 删除：调用 DELETE。

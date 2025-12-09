@@ -1,20 +1,23 @@
 import { Badge } from '@/components/ui/display/badge'
 import { Card } from '@/components/ui/display/card'
-import { Button } from '@/components/ui/form-controls/button'
 import { Input } from '@/components/ui/form-controls/input'
 import type { Template } from '@/modules/billing/schemas/template'
 import { TemplateType } from '@/modules/billing/schemas/template'
 import { useBillingStore } from '@/modules/billing/stores/useBillingStore'
 import { useCustomerStore } from '@/modules/customer/stores/useCustomerStore'
-import { Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import TemplateForm from './components/TemplateForm'
 
 const BillingModule = () => {
-  const { templates, fetchTemplates, createTemplate, updateTemplate } =
-    useBillingStore()
+  const {
+    templates,
+    fetchTemplates,
+    fetchTemplateDetail,
+    createTemplate,
+    updateTemplate,
+  } = useBillingStore()
   const {
     customers,
     loading: customerLoading,
@@ -24,11 +27,6 @@ const BillingModule = () => {
     groupLoading,
   } = useCustomerStore()
   const location = useLocation()
-  const [open, setOpen] = useState(false)
-  const [editing, setEditing] = useState<Template | null>(null)
-  const [createType, setCreateType] = useState<TemplateType>(
-    TemplateType.GLOBAL,
-  )
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null)
   const [activeCustomerId, setActiveCustomerId] = useState<number | null>(null)
   const [customerKeyword, setCustomerKeyword] = useState('')
@@ -64,7 +62,7 @@ const BillingModule = () => {
           return false
         }
         if (currentTab === 'group' && activeGroupId != null) {
-          return template.customerGroupIds?.includes(activeGroupId) ?? false
+          return template.customerGroupId === activeGroupId
         }
         if (currentTab === 'custom' && activeCustomerId != null) {
           return template.customerId === activeCustomerId
@@ -123,12 +121,6 @@ const BillingModule = () => {
     }
   }, [filteredCustomers, activeCustomerId, currentTab])
 
-  const openCreate = () => {
-    setEditing(null)
-    setCreateType(currentTemplateType)
-    setOpen(true)
-  }
-
   const generalTemplate = useMemo(
     () =>
       templates.find(
@@ -140,8 +132,8 @@ const BillingModule = () => {
   const activeGroupTemplate = useMemo(() => {
     if (currentTab !== 'group' || activeGroupId == null) return null
     return (
-      filteredTemplates.find((template) =>
-        template.customerGroupIds?.includes(activeGroupId),
+      filteredTemplates.find(
+        (template) => template.customerGroupId === activeGroupId,
       ) ?? null
     )
   }, [filteredTemplates, currentTab, activeGroupId])
@@ -165,6 +157,51 @@ const BillingModule = () => {
       customers.find((customer) => customer.id === activeCustomerId) ?? null,
     [customers, activeCustomerId],
   )
+
+  const lastFetchedTemplateId = useRef<number | null>(null)
+  const ensureTemplateDetail = useCallback(
+    (template?: Template | null) => {
+      if (!template) return
+      if (
+        lastFetchedTemplateId.current === template.id &&
+        template.rules.length > 0
+      ) {
+        return
+      }
+      lastFetchedTemplateId.current = template.id
+      fetchTemplateDetail(template.id).catch(() => {
+        lastFetchedTemplateId.current = null
+      })
+    },
+    [fetchTemplateDetail],
+  )
+
+  useEffect(() => {
+    ensureTemplateDetail(generalTemplate)
+  }, [
+    generalTemplate,
+    generalTemplate?.id,
+    generalTemplate?.rules.length,
+    ensureTemplateDetail,
+  ])
+
+  useEffect(() => {
+    ensureTemplateDetail(activeGroupTemplate)
+  }, [
+    activeGroupTemplate,
+    activeGroupTemplate?.id,
+    activeGroupTemplate?.rules.length,
+    ensureTemplateDetail,
+  ])
+
+  useEffect(() => {
+    ensureTemplateDetail(activeCustomerTemplate)
+  }, [
+    activeCustomerTemplate,
+    activeCustomerTemplate?.id,
+    activeCustomerTemplate?.rules.length,
+    ensureTemplateDetail,
+  ])
 
   useEffect(() => {
     if (currentTab !== 'group' || activeGroupId == null) return
@@ -190,10 +227,7 @@ const BillingModule = () => {
       const finalPayload: Omit<Template, 'id'> = {
         ...payload,
         templateType: TemplateType.GROUP,
-        customerGroupIds:
-          payload.customerGroupIds && payload.customerGroupIds.length > 0
-            ? payload.customerGroupIds
-            : [activeGroupId],
+        customerGroupId: payload.customerGroupId ?? activeGroupId,
       }
       if (activeGroupTemplate) {
         await updateTemplate(activeGroupTemplate.id, finalPayload)
@@ -261,22 +295,14 @@ const BillingModule = () => {
             </Badge>
           </div>
         </div>
-        {currentTab === 'general' && (
-          <Button onClick={openCreate} className="self-start md:self-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            新建模板
-          </Button>
-        )}
       </div>
 
       {currentTab === 'general' && (
         <Card className="p-4 shadow-sm">
           <TemplateForm
-            open
+            key={`global-${filteredTemplates[0]?.id ?? 'default'}`}
             initialData={filteredTemplates[0]}
             templateType={TemplateType.GLOBAL}
-            mode="inline"
-            onClose={() => {}}
           />
         </Card>
       )}
@@ -284,7 +310,7 @@ const BillingModule = () => {
       {currentTab === 'group' && (
         <Card className="p-0 shadow-sm">
           <div className="flex flex-col md:flex-row">
-            <div className="border-b md:min-w-[240px] md:border-b-0 md:border-r">
+            <div className="border-b md:min-w-60 md:border-b-0 md:border-r">
               <div className="flex items-center justify-between border-b px-4 py-3 md:border-b-0">
                 <p className="text-sm font-semibold text-muted-foreground">
                   客户分组
@@ -361,9 +387,7 @@ const BillingModule = () => {
                   </div>
 
                   <TemplateForm
-                    open
-                    onClose={() => {}}
-                    mode="inline"
+                    key={`group-${activeGroupTemplate?.id ?? activeGroupId ?? 'empty'}`}
                     templateType={TemplateType.GROUP}
                     contextGroupId={activeGroupId ?? undefined}
                     onSubmitTemplate={handleGroupSubmit}
@@ -458,9 +482,7 @@ const BillingModule = () => {
                   </div>
 
                   <TemplateForm
-                    open
-                    onClose={() => {}}
-                    mode="inline"
+                    key={`customer-${activeCustomerTemplate?.id ?? activeCustomerId ?? 'empty'}`}
                     templateType={TemplateType.CUSTOMER}
                     contextCustomerId={activeCustomerId ?? undefined}
                     onSubmitTemplate={handleCustomerSubmit}
@@ -474,16 +496,6 @@ const BillingModule = () => {
           </div>
         </Card>
       )}
-
-      <TemplateForm
-        open={open}
-        initialData={editing ?? undefined}
-        templateType={editing?.templateType ?? createType}
-        onClose={() => {
-          setOpen(false)
-          setEditing(null)
-        }}
-      />
     </div>
   )
 }

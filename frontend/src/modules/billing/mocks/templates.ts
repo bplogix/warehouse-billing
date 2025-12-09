@@ -1,3 +1,4 @@
+import type { Template } from '@/modules/billing/schemas/template'
 import {
   ChargeCategory,
   ChargeChannel,
@@ -5,7 +6,6 @@ import {
   PricingMode,
   TemplateType,
 } from '@/modules/billing/schemas/template'
-import type { Template } from '@/modules/billing/schemas/template'
 
 export const mockTemplates: Template[] = [
   {
@@ -16,7 +16,6 @@ export const mockTemplates: Template[] = [
     description: '适用于所有客户的默认规则',
     effectiveDate: '2025-01-01',
     expireDate: null,
-    version: 1,
     rules: [
       {
         chargeCode: 'STORAGE_BASE',
@@ -66,8 +65,7 @@ export const mockTemplates: Template[] = [
     description: '华东区域客户群组定价',
     effectiveDate: '2025-02-01',
     expireDate: null,
-    version: 2,
-    customerGroupIds: [10, 11],
+    customerGroupId: 10,
     rules: [
       {
         chargeCode: 'TRANSPORT',
@@ -100,7 +98,6 @@ export const mockTemplates: Template[] = [
     description: '针对 ACME 客户的定制规则',
     effectiveDate: '2025-01-15',
     expireDate: '2026-01-15',
-    version: 1,
     customerId: 1001,
     rules: [
       {

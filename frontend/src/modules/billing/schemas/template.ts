@@ -85,14 +85,13 @@ export type Template = {
   description: string
   effectiveDate: string
   expireDate: string | null
-  version: number
   rules: TemplateRule[]
   businessDomain?: string
   createdAt?: string
   updatedAt?: string
 
   // 客户关联字段
-  customerGroupIds?: number[] // 适用的客户分组ID列表
+  customerGroupId?: number // 适用的客户分组ID（仅 GROUP）
   customerId?: number // 专属客户ID
 }
 
@@ -118,7 +117,7 @@ export type TemplateCreatePayload = {
   effectiveDate: string
   expireDate?: string | null
   customerId?: number | null
-  customerGroupIds?: number[] | null
+  customerGroupId?: number | null
   rules: TemplateRule[]
 }
 
@@ -127,8 +126,7 @@ export type TemplateUpdatePayload = {
   description?: string | null
   effectiveDate: string
   expireDate?: string | null
-  version: number
   customerId?: number | null
-  customerGroupIds?: number[] | null
+  customerGroupId?: number | null
   rules: TemplateRule[]
 }

@@ -24,19 +24,14 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/navigation/tabs'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/overlay/dialog'
-import { addDays, format } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 import { Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Controller,
   useFieldArray,
   useForm,
+  useWatch,
   type Control,
 } from 'react-hook-form'
 
@@ -89,7 +84,7 @@ type TemplateFormValues = {
   effectiveDate: string
   expireDate: string | null
   customerId: number | null
-  customerGroupIds: number[]
+  customerGroupId: number | null
   rules: RuleForm[]
 }
 
@@ -100,7 +95,7 @@ const defaultValues: TemplateFormValues = {
   effectiveDate: '',
   expireDate: null,
   customerId: null,
-  customerGroupIds: [],
+  customerGroupId: null,
   rules: [],
 }
 
@@ -118,27 +113,18 @@ const generateTemplateCode = (type: TemplateType) => {
   }
 }
 
-const buildDefaultValues = (
-  type: TemplateType,
-  contextGroupId?: number,
-  contextCustomerId?: number,
-): TemplateFormValues => ({
-  templateName: type === TemplateType.GLOBAL ? '通用规则' : '',
-  templateCode: generateTemplateCode(type),
-  description: '',
-  effectiveDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
-  expireDate: null,
-  customerId: contextCustomerId ?? null,
-  customerGroupIds: contextGroupId ? [contextGroupId] : [],
-  rules: [],
-})
+const toDateInputValue = (value?: string | null) => {
+  if (!value) return ''
+  try {
+    return format(parseISO(value), 'yyyy-MM-dd')
+  } catch {
+    return ''
+  }
+}
 
 type TemplateFormProps = {
-  open: boolean
-  onClose: () => void
   initialData?: Template | null
   templateType?: TemplateType
-  mode?: 'dialog' | 'inline'
   contextGroupId?: number
   contextCustomerId?: number
   onSubmitTemplate?: (
@@ -148,11 +134,8 @@ type TemplateFormProps = {
 }
 
 const TemplateForm = ({
-  open,
-  onClose,
   initialData,
   templateType = TemplateType.CUSTOMER,
-  mode = 'dialog',
   contextGroupId,
   contextCustomerId,
   onSubmitTemplate,
@@ -179,66 +162,107 @@ const TemplateForm = ({
     control: form.control,
     name: 'rules',
   })
+  const watchedRulesRaw = useWatch({
+    control: form.control,
+    name: 'rules',
+  })
+  const watchedRules = useMemo(() => watchedRulesRaw ?? [], [watchedRulesRaw])
 
   useEffect(() => {
-    if (initialData) {
-      const existingGroupIds = initialData.customerGroupIds ?? []
-      const mergedGroupIds =
-        contextGroupId && !existingGroupIds.includes(contextGroupId)
-          ? [...existingGroupIds, contextGroupId]
-          : existingGroupIds
-      const shouldGenerateNewCode =
-        initialData.templateType !== templateType &&
-        templateType !== TemplateType.GLOBAL
-      const codeValue = shouldGenerateNewCode
-        ? generateTemplateCode(templateType)
-        : initialData.templateCode
-      form.reset({
-        templateName: initialData.templateName,
-        templateCode: codeValue,
-        description: initialData.description ?? '',
-        effectiveDate: initialData.effectiveDate,
-        expireDate: initialData.expireDate || null,
-        customerId: contextCustomerId ?? initialData.customerId ?? null,
-        customerGroupIds:
-          mergedGroupIds.length > 0
-            ? mergedGroupIds
-            : contextGroupId
-              ? [contextGroupId]
-              : [],
-        rules: initialData.rules.map((rule) => {
-          const supportOnly =
-            rule.supportOnly ?? supportOnlyCategories.has(rule.category)
-          const allowedModes = getAllowedPricingModes(rule.category)
-          const safePricingMode = supportOnly
-            ? PricingMode.FLAT
-            : allowedModes.includes(rule.pricingMode)
-              ? rule.pricingMode
-              : allowedModes[0]
-          const normalizedTiers = (rule.tiers ?? []).map((tier) => ({
-            ...tier,
-            price: Math.max(0, tier.price),
-          }))
-          return {
-            ...rule,
-            tiers: normalizedTiers,
-            supportOnly,
-            pricingMode: safePricingMode,
-            price: supportOnly
-              ? null
-              : Math.max(
-                  0,
-                  rule.price ?? (safePricingMode === PricingMode.FLAT ? 0 : 0),
-                ),
+    if (watchedRules.length === 0) return
+    watchedRules.forEach((rule, index) => {
+      if (!rule) return
+      const supportOnly =
+        rule.supportOnly ?? supportOnlyCategories.has(rule.category)
+      if (supportOnly || rule.pricingMode !== PricingMode.TIERED) return
+      const tiers = rule.tiers ?? []
+      if (tiers.length === 0) {
+        form.setValue(`rules.${index}.tiers`, [
+          { minValue: 0, maxValue: null, price: 0, description: '' },
+        ])
+      }
+    })
+  }, [watchedRules, form])
+
+  useEffect(() => {
+    if (watchedRules.length === 0) return
+    watchedRules.forEach((rule, index) => {
+      if (!rule || rule.pricingMode !== PricingMode.TIERED) return
+      const tiers = rule.tiers ?? []
+      if (tiers.length < 2) return
+      let updated: RuleForm['tiers'] | null = null
+      for (let tierIndex = 1; tierIndex < tiers.length; tierIndex += 1) {
+        const prevMax = tiers[tierIndex - 1]?.maxValue ?? 0
+        if (tiers[tierIndex].minValue !== prevMax) {
+          if (!updated) {
+            updated = [...tiers]
           }
-        }),
-      })
-    } else {
-      form.reset(
-        buildDefaultValues(templateType, contextGroupId, contextCustomerId),
-      )
-    }
-  }, [initialData, form, templateType, contextGroupId, contextCustomerId])
+          updated[tierIndex] = {
+            ...updated[tierIndex],
+            minValue: prevMax,
+          }
+        }
+      }
+      if (updated) {
+        form.setValue(`rules.${index}.tiers`, updated)
+      }
+    })
+  }, [watchedRules, form])
+
+  const hasRules = initialData?.rules?.length ?? 0
+  useEffect(() => {
+    if (!initialData || hasRules === 0) return
+    const shouldGenerateNewCode =
+      initialData.templateType !== templateType &&
+      templateType !== TemplateType.GLOBAL
+    const codeValue = shouldGenerateNewCode
+      ? generateTemplateCode(templateType)
+      : initialData.templateCode
+    const derivedGroupId = contextGroupId ?? initialData.customerGroupId ?? null
+    form.reset({
+      templateName: initialData.templateName,
+      templateCode: codeValue,
+      description: initialData.description ?? '',
+      effectiveDate: toDateInputValue(initialData.effectiveDate),
+      expireDate: toDateInputValue(initialData.expireDate) || null,
+      customerId: contextCustomerId ?? initialData.customerId ?? null,
+      customerGroupId: derivedGroupId,
+      rules: initialData.rules.map((rule) => {
+        const supportOnly =
+          rule.supportOnly ?? supportOnlyCategories.has(rule.category)
+        const allowedModes = getAllowedPricingModes(rule.category)
+        const safePricingMode = supportOnly
+          ? PricingMode.FLAT
+          : allowedModes.includes(rule.pricingMode)
+            ? rule.pricingMode
+            : allowedModes[0]
+        const normalizedTiers = (rule.tiers ?? []).map((tier) => ({
+          ...tier,
+          price: Math.max(0, tier.price),
+        }))
+        return {
+          ...rule,
+          tiers: normalizedTiers,
+          supportOnly,
+          pricingMode: safePricingMode,
+          price: supportOnly
+            ? null
+            : Math.max(
+                0,
+                rule.price ?? (safePricingMode === PricingMode.FLAT ? 0 : 0),
+              ),
+        }
+      }),
+    })
+  }, [
+    initialData,
+    form,
+    templateType,
+    contextGroupId,
+    contextCustomerId,
+    hasRules,
+    initialData?.id,
+  ])
 
   useEffect(() => {
     if (!effectiveDateValue) {
@@ -278,26 +302,24 @@ const TemplateForm = ({
       description: values.description,
       effectiveDate: values.effectiveDate,
       expireDate: values.expireDate || null,
-      version: initialData?.version ?? 1,
       rules: values.rules,
       customerId: contextCustomerId ?? values.customerId ?? undefined,
     }
     if (templateType === TemplateType.GROUP) {
-      const derivedGroupIds = contextGroupId
-        ? [contextGroupId]
-        : values.customerGroupIds?.length
-          ? values.customerGroupIds
-          : (initialData?.customerGroupIds ?? [])
-      if (derivedGroupIds.length > 0) {
-        payload.customerGroupIds = derivedGroupIds
+      const derivedGroupId =
+        contextGroupId ??
+        values.customerGroupId ??
+        initialData?.customerGroupId ??
+        null
+      if (derivedGroupId != null) {
+        payload.customerGroupId = derivedGroupId
       }
-    } else if (initialData?.customerGroupIds) {
-      payload.customerGroupIds = initialData.customerGroupIds
+    } else if (initialData?.customerGroupId != null) {
+      payload.customerGroupId = initialData.customerGroupId
     }
 
     if (onSubmitTemplate) {
       await onSubmitTemplate(payload, initialData ?? null)
-      onClose()
       return
     }
 
@@ -306,7 +328,6 @@ const TemplateForm = ({
     } else {
       await createTemplate(payload)
     }
-    onClose()
   }
 
   const selectedCodes = fields.map((rule) => rule.chargeCode)
@@ -363,16 +384,7 @@ const TemplateForm = ({
     const pricingMode = form.watch(`rules.${index}.pricingMode`) as
       | PricingMode
       | undefined
-    if (!supportOnly && pricingMode === PricingMode.TIERED) {
-      const tiers = form.getValues(`rules.${index}.tiers`) as
-        | RuleForm['tiers']
-        | undefined
-      if (!tiers || tiers.length === 0) {
-        form.setValue(`rules.${index}.tiers`, [
-          { minValue: 0, maxValue: null, price: 0, description: '' },
-        ])
-      }
-    }
+    // Explicit tier initialization and minValue normalization handled by effects.
 
     return (
       <Card className="shadow-sm">
@@ -504,20 +516,10 @@ const TemplateForm = ({
                                 ? null
                                 : (tierField.value?.[tierIndex - 1]?.maxValue ??
                                   0)
-                            const minValue =
-                              tierIndex === 0 ? tier.minValue : (prevMax ?? 0)
-                            if (
-                              tierIndex > 0 &&
-                              tierField.value?.[tierIndex]?.minValue !==
-                                minValue
-                            ) {
-                              const updated = [...tierField.value]
-                              updated[tierIndex] = {
-                                ...updated[tierIndex],
-                                minValue,
-                              }
-                              tierField.onChange(updated)
-                            }
+                            const displayMinValue =
+                              tierIndex === 0
+                                ? (tier.minValue ?? 0)
+                                : (prevMax ?? 0)
                             return (
                               <div
                                 key={tierIndex}
@@ -526,7 +528,7 @@ const TemplateForm = ({
                                 <Input
                                   type="number"
                                   placeholder="最小值"
-                                  value={minValue}
+                                  value={displayMinValue}
                                   disabled={tierIndex > 0}
                                   onChange={(e) => {
                                     const value = Number(e.target.value)
@@ -843,9 +845,6 @@ const TemplateForm = ({
         </div>
 
         <div className="flex items-center justify-end gap-2 lg:col-span-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            取消
-          </Button>
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? '保存中...' : '保存'}
           </Button>
@@ -854,29 +853,13 @@ const TemplateForm = ({
     </Form>
   )
 
-  if (mode === 'inline') {
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          {initialData ? '编辑计费模板' : '新增计费模板'}
-        </h3>
-        {formContent}
-      </div>
-    )
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>
-            {initialData ? '编辑计费模板' : '新增计费模板'}
-          </DialogTitle>
-        </DialogHeader>
-
-        {formContent}
-      </DialogContent>
-    </Dialog>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">
+        {initialData ? '编辑计费模板' : '新增计费模板'}
+      </h3>
+      {formContent}
+    </div>
   )
 }
 
