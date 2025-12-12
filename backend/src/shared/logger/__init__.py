@@ -48,7 +48,9 @@ def setup_logging():
             structlog.contextvars.merge_contextvars,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
-            renderer,
+            structlog.processors.format_exc_info,  # ← 关键：不用 rich_traceback
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+            # renderer,
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
