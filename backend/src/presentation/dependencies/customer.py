@@ -60,6 +60,7 @@ def get_customer_group_detail_use_case(
 
 
 def get_query_external_companies_use_case(
-    session: AsyncSession = Depends(get_external_mysql_session),
+    external_session: AsyncSession = Depends(get_external_mysql_session),
+    postgres_session: AsyncSession = Depends(get_postgres_session),
 ) -> QueryExternalCompaniesUseCase:
-    return QueryExternalCompaniesUseCase(session=session)
+    return QueryExternalCompaniesUseCase(external_session=external_session, company_session=postgres_session)

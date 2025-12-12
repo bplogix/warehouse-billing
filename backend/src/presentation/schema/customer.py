@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import Field
+import re
+
+from pydantic import Field, field_validator
 
 from src.domain.customer import CustomerStatus
 from src.intrastructure.database.external.company import RbCompanyInfo
@@ -16,11 +18,26 @@ class CompanyCreateSchema(CamelModel):
 
     model_config = CamelModel.model_config
 
+    @field_validator("company_name")
+    @classmethod
+    def validate_company_name(cls, value: str) -> str:
+        if any(char.isdigit() for char in value):
+            raise ValueError("company_name must not contain digits")
+        return value
+
+    @field_validator("company_code")
+    @classmethod
+    def validate_company_code(cls, value: str) -> str:
+        code_pattern = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$")
+        if not code_pattern.fullmatch(value):
+            raise ValueError("company_code must contain only uppercase letters, digits, and internal hyphens")
+        return value
+
 
 class CustomerCreateSchema(CamelModel):
     customer_name: str = Field(..., alias="name")
     customer_code: str = Field(..., alias="code")
-    business_domain: str = Field(..., alias="businessDomain")
+    business_domain: str = Field(default="WAREHOUSE", alias="businessDomain")
     source: str = "INTERNAL"
     status: CustomerStatus = CustomerStatus.ACTIVE
     source_ref_id: str | None = Field(default=None, alias="sourceRefId")
@@ -28,6 +45,21 @@ class CustomerCreateSchema(CamelModel):
     customs_code: str | None = Field(default=None, alias="customsCode")
 
     model_config = CamelModel.model_config
+
+    @field_validator("customer_name")
+    @classmethod
+    def validate_customer_name(cls, value: str) -> str:
+        if any(char.isdigit() for char in value):
+            raise ValueError("customer_name must not contain digits")
+        return value
+
+    @field_validator("customer_code")
+    @classmethod
+    def validate_customer_code(cls, value: str) -> str:
+        code_pattern = re.compile(r"^WS-\d+$")
+        if not code_pattern.fullmatch(value):
+            raise ValueError("customer_code must start with 'WS-' followed by digits")
+        return value
 
 
 class CustomerCreateRequest(CamelModel):

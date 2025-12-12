@@ -17,8 +17,8 @@ class CreateCompanyCommand:
 class CreateCustomerCommand:
     customer_name: str
     customer_code: str
-    business_domain: str
     source: str
+    business_domain: str = "WAREHOUSE"
     status: CustomerStatus = CustomerStatus.ACTIVE
     source_ref_id: str | None = None
     bonded_license_no: str | None = None

@@ -8,6 +8,7 @@ from src.application.customer.commands import (
     QueryCustomersCommand,
     UpdateCustomerStatusCommand,
 )
+from src.application.customer.exceptions import DuplicateCompanyError, DuplicateCustomerError
 from src.application.customer.group_commands import (
     CreateCustomerGroupCommand,
     QueryExternalCompaniesCommand,
@@ -80,11 +81,16 @@ async def create_customer(
         bonded_license_no=payload.customer.bonded_license_no,
         customs_code=payload.customer.customs_code,
     )
-    result = await use_case.execute(
-        company_cmd=company_cmd,
-        customer_cmd=customer_cmd,
-        operator=current_user.user_id,
-    )
+    try:
+        result = await use_case.execute(
+            company_cmd=company_cmd,
+            customer_cmd=customer_cmd,
+            operator=current_user.user_id,
+        )
+    except DuplicateCompanyError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
+    except DuplicateCustomerError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
     return SuccessResponse(data=CustomerResponse.from_model(result.customer))
 
 

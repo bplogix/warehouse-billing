@@ -28,6 +28,13 @@ class CustomerRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_name(self, customer_name: str, business_domain: str | None = None) -> Customer | None:
+        stmt = select(Customer).where(Customer.customer_name == customer_name, Customer.is_deleted.is_(False))
+        if business_domain:
+            stmt = stmt.where(Customer.business_domain == business_domain)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_detail(self, customer_id: int) -> Customer | None:
         stmt = (
             select(Customer)

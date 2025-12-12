@@ -29,12 +29,25 @@ class CompanyRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_name(self, company_name: str) -> Company | None:
+        stmt = select(Company).where(Company.company_name == company_name, Company.is_deleted.is_(False))
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_by_ids(self, ids: Sequence[str]) -> list[Company]:
         if not ids:
             return []
         stmt = select(Company).where(Company.company_id.in_(ids), Company.is_deleted.is_(False))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_source_ref_ids(self) -> list[str]:
+        stmt = select(Company.source_ref_id).where(
+            Company.source_ref_id.is_not(None),
+            Company.is_deleted.is_(False),
+        )
+        result = await self._session.execute(stmt)
+        return [value for value in result.scalars().all() if value]
 
     async def soft_delete(self, company_id: str, operator: str | None = None) -> None:
         company = await self.get_by_id(company_id)

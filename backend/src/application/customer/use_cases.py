@@ -10,6 +10,7 @@ from src.application.customer.commands import (
     QueryCustomersCommand,
     UpdateCustomerStatusCommand,
 )
+from src.application.customer.exceptions import DuplicateCompanyError, DuplicateCustomerError
 from src.application.customer.group_commands import (
     CreateCustomerGroupCommand,
     QueryExternalCompaniesCommand,
@@ -62,56 +63,71 @@ class CreateCustomerUseCase:
             allowed_domains[0] if allowed_domains else BusinessDomainGuard.DEFAULT_DOMAIN
         )
 
-        company_entity = CompanyEntity(
-            company_id=company_cmd.company_code,
-            company_name=company_cmd.company_name,
-            company_code=company_cmd.company_code,
-            source=company_cmd.source,
-            source_ref_id=company_cmd.source_ref_id,
-        )
-        company_entity.validate_source_ref()
-        company = Company(
-            company_id=company_entity.company_id,
-            company_name=company_entity.company_name,
-            company_code=company_entity.company_code,
-            company_corporation="",
-            company_phone="",
-            company_email="",
-            company_address="",
-            source=company_entity.source,
-            source_ref_id=company_entity.source_ref_id,
-        )
-        company.created_by = operator
-
-        customer_entity: CustomerEntity = import_service.create_customer(
-            company=company_entity,
-            customer_name=customer_cmd.customer_name,
-            customer_code=customer_cmd.customer_code,
-            business_domain=business_domain,
-            source=customer_cmd.source,
-            status=customer_cmd.status,
-            source_ref_id=customer_cmd.source_ref_id,
-        )
-        orm_status = ORMCustStatus(customer_entity.status.value)
-        customer = Customer(
-            customer_name=customer_entity.customer_name,
-            customer_code=customer_entity.customer_code,
-            status=orm_status,
-            company_id=company.company_id,
-            business_domain=customer_entity.business_domain,
-            source=customer_entity.source,
-            source_ref_id=customer_entity.source_ref_id,
-            address="",
-            contact_email="",
-            contact_person="",
-            operation_name=operator,
-            operation_uid=operator,
-            bonded_license_no=customer_entity.bonded_license_no,
-            customs_code=customer_entity.customs_code,
-        )
-        customer.created_by = operator
-
         async with self._session.begin():
+            existing_company_code = await company_repo.get_by_code(company_cmd.company_code)
+            if existing_company_code:
+                raise DuplicateCompanyError("Company code already exists")
+            existing_company_name = await company_repo.get_by_name(company_cmd.company_name)
+            if existing_company_name:
+                raise DuplicateCompanyError("Company name already exists")
+            existing_customer_code = await customer_repo.get_by_code(customer_cmd.customer_code)
+            if existing_customer_code:
+                raise DuplicateCustomerError("Customer code already exists")
+            existing_customer_name = await customer_repo.get_by_name(
+                customer_cmd.customer_name, business_domain=business_domain
+            )
+            if existing_customer_name:
+                raise DuplicateCustomerError("Customer name already exists in the same business domain")
+
+            company_entity = CompanyEntity(
+                company_id=company_cmd.company_code,
+                company_name=company_cmd.company_name,
+                company_code=company_cmd.company_code,
+                source=company_cmd.source,
+                source_ref_id=company_cmd.source_ref_id,
+            )
+            company_entity.validate_source_ref()
+            company = Company(
+                company_id=company_entity.company_id,
+                company_name=company_entity.company_name,
+                company_code=company_entity.company_code,
+                company_corporation="",
+                company_phone="",
+                company_email="",
+                company_address="",
+                source=company_entity.source,
+                source_ref_id=company_entity.source_ref_id,
+            )
+            company.created_by = operator
+
+            customer_entity: CustomerEntity = import_service.create_customer(
+                company=company_entity,
+                customer_name=customer_cmd.customer_name,
+                customer_code=customer_cmd.customer_code,
+                business_domain=business_domain,
+                source=customer_cmd.source,
+                status=customer_cmd.status,
+                source_ref_id=customer_cmd.source_ref_id,
+            )
+            orm_status = ORMCustStatus(customer_entity.status.value)
+            customer = Customer(
+                customer_name=customer_entity.customer_name,
+                customer_code=customer_entity.customer_code,
+                status=orm_status,
+                company_id=company.company_id,
+                business_domain=customer_entity.business_domain,
+                source=customer_entity.source,
+                source_ref_id=customer_entity.source_ref_id,
+                address="",
+                contact_email="",
+                contact_person="",
+                operation_name=operator,
+                operation_uid=operator,
+                bonded_license_no=customer_entity.bonded_license_no,
+                customs_code=customer_entity.customs_code,
+            )
+            customer.created_by = operator
+
             await company_repo.add(company)
             await customer_repo.add(customer)
         logger.info("customer created", customer_code=customer.customer_code)
@@ -282,10 +298,18 @@ class ExternalCompaniesResult:
 
 
 class QueryExternalCompaniesUseCase:
-    def __init__(self, session: AsyncSession) -> None:
-        self._session = session
+    def __init__(self, external_session: AsyncSession, company_session: AsyncSession) -> None:
+        self._external_session = external_session
+        self._company_session = company_session
 
     async def execute(self, cmd: QueryExternalCompaniesCommand) -> ExternalCompaniesResult:
-        repo = ExternalCompanyRepository(self._session)
-        items, total = await repo.list_companies(keyword=cmd.keyword, limit=cmd.limit, offset=cmd.offset)
+        repo = ExternalCompanyRepository(self._external_session)
+        company_repo = CompanyRepository(self._company_session)
+        linked_ids = await company_repo.list_source_ref_ids()
+        items, total = await repo.list_companies(
+            keyword=cmd.keyword,
+            limit=cmd.limit,
+            offset=cmd.offset,
+            exclude_ids=linked_ids,
+        )
         return ExternalCompaniesResult(companies=items, total=total)
