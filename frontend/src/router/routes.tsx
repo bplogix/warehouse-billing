@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router-dom'
 import { createBrowserRouter } from 'react-router-dom'
 
 import BillingModule from '@/modules/billing'
+import BillingPage from '@/modules/billing/Default'
 import AddCustomer from '@/modules/customer/AddCustomer'
 import CustomerGroups from '@/modules/customer/CustomerGroups'
 import CustomerQuotes from '@/modules/customer/CustomerQuotes'
@@ -57,7 +58,7 @@ export const routeConfig: RouteObject[] = [
       {
         path: 'billing',
         children: [
-          { index: true, element: <BillingModule /> },
+          { index: true, element: <BillingPage /> },
           { path: 'general', element: <BillingModule /> },
           { path: 'group', element: <BillingModule /> },
           { path: 'custom', element: <BillingModule /> },
