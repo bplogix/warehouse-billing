@@ -40,7 +40,7 @@ export interface CustomerCreatePayload {
   customer: {
     name: string
     code: string
-    businessDomain: string
+    businessDomain?: string
     source?: CustomerSource
     status?: CustomerStatus
     sourceRefId?: string | null

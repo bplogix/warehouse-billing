@@ -28,12 +28,12 @@ import type {
 
 type Props = {
   onCreated?: (id: number | null) => void
+  enableRBLink?: boolean
 }
 
 type CustomerFormValues = {
   customerName: string
   customerCode: string
-  businessDomain: string
   status: CustomerStatus
   companyName: string
   companyCode: string
@@ -43,7 +43,6 @@ type CustomerFormValues = {
 const defaultValues: CustomerFormValues = {
   customerName: '',
   customerCode: '',
-  businessDomain: '',
   status: 'ACTIVE',
   companyName: '',
   companyCode: '',
@@ -54,7 +53,7 @@ const statusOptions: { value: CustomerStatus; label: string }[] = [
   { value: 'INACTIVE', label: '停用' },
 ]
 
-const CustomerForm = ({ onCreated }: Props) => {
+const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
   const form = useForm<CustomerFormValues>({ defaultValues })
   const { create, searchCompanies, companyOptions, companySearchLoading } =
     useCustomerStore()
@@ -62,17 +61,61 @@ const CustomerForm = ({ onCreated }: Props) => {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    if (!enableRBLink) return
     void searchCompanies(keyword)
-  }, [keyword, searchCompanies])
+  }, [enableRBLink, keyword, searchCompanies])
+
+  useEffect(() => {
+    if (enableRBLink) return
+    setKeyword('')
+    form.setValue('selectedCompanyId', undefined)
+  }, [enableRBLink, form])
 
   const companyList: ExternalCompany[] = useMemo(
     () => (Array.isArray(companyOptions) ? companyOptions : []),
     [companyOptions],
   )
 
+  const sanitizeName = (name: string) =>
+    name.replace(/[\d\p{P}\p{S}]/gu, '').trim()
+
+  const normalizeCodeValue = (value: string) => value.toUpperCase()
+
+  const isCodePatternValid = (value: string) => {
+    const isDigitsOnly = /^\d+$/.test(value)
+    const isUppercaseAlphanumericCombo =
+      /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]+$/.test(value)
+    return isDigitsOnly || isUppercaseAlphanumericCombo
+  }
+
+  const validateCode = (value: string, label: string) => {
+    if (!value) return true
+    if (value !== value.toUpperCase()) {
+      return `${label}仅支持大写英文与数字`
+    }
+    if (isCodePatternValid(value)) {
+      return true
+    }
+    return `${label}仅支持纯数字或大写英文+数字组合`
+  }
+
+  const stripCustomerPrefix = (value: string) =>
+    value.startsWith('WS-') ? value.slice(3) : value
+
+  const buildCustomerCode = (companyCode: string) => {
+    if (!companyCode) return ''
+    return `WS-${companyCode}`
+  }
+
   const handleSelectCompany = (company: ExternalCompany) => {
-    form.setValue('companyName', company.companyName)
-    form.setValue('companyCode', company.companyCode ?? '')
+    const sanitizedName = sanitizeName(company.companyName)
+    const normalizedCompanyCode = normalizeCodeValue(
+      company.companyCode ?? '',
+    )
+    form.setValue('companyName', sanitizedName)
+    form.setValue('customerName', sanitizedName)
+    form.setValue('companyCode', normalizedCompanyCode)
+    form.setValue('customerCode', buildCustomerCode(normalizedCompanyCode))
     form.setValue('selectedCompanyId', company.companyId)
   }
 
@@ -90,7 +133,6 @@ const CustomerForm = ({ onCreated }: Props) => {
       customer: {
         name: values.customerName,
         code: values.customerCode,
-        businessDomain: values.businessDomain,
         status: values.status,
         source: values.selectedCompanyId
           ? CustomerSource.RB
@@ -108,6 +150,84 @@ const CustomerForm = ({ onCreated }: Props) => {
   return (
     <Form {...form}>
       <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        {enableRBLink && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">关联公司（RB 公司库）</p>
+              {companySearchLoading && (
+                <span className="text-xs text-muted-foreground">搜索中...</span>
+              )}
+            </div>
+            <Input
+              name="companySearch"
+              placeholder="输入公司名称或编码检索"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/80 p-2 text-sm">
+              {companyList.length === 0 && (
+                <p className="text-muted-foreground">暂无匹配结果</p>
+              )}
+              {companyList.map((company) => (
+                <button
+                  key={company.companyId}
+                  type="button"
+                  className="w-full rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => handleSelectCompany(company)}
+                >
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span>{company.companyName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {company.companyCode}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="companyName"
+            rules={{
+              validate: (value) =>
+                !value || !/\d/.test(value) || '公司名称不能包含数字',
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>公司名称</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="companyCode"
+            rules={{
+              validate: (value) => validateCode(value, '公司编码'),
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>公司编码</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(
+                        normalizeCodeValue(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -126,26 +246,23 @@ const CustomerForm = ({ onCreated }: Props) => {
           <FormField
             control={form.control}
             name="customerCode"
-            rules={{ required: '请输入客户编码' }}
+            rules={{
+              required: '请输入客户编码',
+              validate: (value) =>
+                validateCode(stripCustomerPrefix(value), '客户编码'),
+            }}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>客户编码</FormLabel>
                 <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="businessDomain"
-            rules={{ required: '请输入业务域' }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>业务域</FormLabel>
-                <FormControl>
-                  <Input placeholder="例如：物流/仓储" {...field} />
+                  <Input
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(
+                        normalizeCodeValue(event.target.value),
+                      )
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -158,10 +275,9 @@ const CustomerForm = ({ onCreated }: Props) => {
               <FormItem>
                 <FormLabel>状态</FormLabel>
                 <Select
-                  defaultValue={field.value}
-                  onValueChange={(value: CustomerStatus) =>
-                    field.onChange(value)
-                  }
+                  name={field.name}
+                  value={field.value}
+                  onValueChange={(value: CustomerStatus) => field.onChange(value)}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -180,68 +296,6 @@ const CustomerForm = ({ onCreated }: Props) => {
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">关联公司（RB 公司库）</p>
-            {companySearchLoading && (
-              <span className="text-xs text-muted-foreground">搜索中...</span>
-            )}
-          </div>
-          <Input
-            placeholder="输入公司名称或编码检索"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-          <div className="max-h-40 space-y-2 overflow-auto rounded-md border bg-background/80 p-2 text-sm">
-            {companyList.length === 0 && (
-              <p className="text-muted-foreground">暂无匹配结果</p>
-            )}
-            {companyList.map((company) => (
-              <button
-                key={company.companyId}
-                type="button"
-                className="w-full rounded-md px-3 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"
-                onClick={() => handleSelectCompany(company)}
-              >
-                <div className="flex items-center justify-between text-sm font-medium">
-                  <span>{company.companyName}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {company.companyCode}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>公司名称</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="companyCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>公司编码</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
         </div>
 
         <div className="flex justify-end">
