@@ -50,11 +50,7 @@ class ExternalMySQLDatabase:
             pool_recycle=1800,
             connect_args={"connect_timeout": mysql_settings.CONNECT_TIMEOUT},
         )
-        self._session_factory = async_sessionmaker(
-            self._engine,
-            expire_on_commit=False,
-            autoflush=False
-        )
+        self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False, autoflush=False)
         logger.info("external mysql engine initialized")
 
     async def connect(self) -> None:
