@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from src.application.auth.qr_login_service import DingTalkQrLoginService
 from src.application.auth.services import UserDomainMappingService
-from src.application.auth.use_cases import AuthenticateUserUseCase, AuthorizeRequestService
+from src.application.auth.use_cases import AuthenticateUserUseCase, AuthorizeRequestService, RefreshTokenUseCase
 from src.intrastructure.auth import MockDingTalkAuthGateway, RealDingTalkAuthGateway, TokenService
 from src.intrastructure.cache.dingtalk_qr_state import DingTalkQrStateRepository
 from src.shared.config import settings
@@ -49,3 +49,8 @@ def get_authorize_request_service() -> AuthorizeRequestService:
 @lru_cache
 def get_dingtalk_qr_login_service() -> DingTalkQrLoginService:
     return DingTalkQrLoginService(qr_state_repo=get_qr_state_repository(), gateway=get_dingtalk_gateway())
+
+
+@lru_cache
+def get_refresh_token_use_case() -> RefreshTokenUseCase:
+    return RefreshTokenUseCase(token_service=get_token_service())

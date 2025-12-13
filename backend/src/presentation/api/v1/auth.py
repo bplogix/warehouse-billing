@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 
-from src.application.auth.container import get_dingtalk_qr_login_service
+from src.application.auth.container import get_dingtalk_qr_login_service, get_refresh_token_use_case
 from src.application.auth.qr_login_service import DingTalkQrLoginService, QrLoginStateNotFoundError
+from src.application.auth.use_cases import RefreshTokenUseCase
+from src.application.auth.exceptions import AuthenticationFailedError
 from src.presentation.dependencies.auth import (
     authenticate_user_dependency,
     get_current_user,
@@ -17,6 +19,7 @@ from src.shared.schemas.auth import (
     DingTalkQrCreateRequest,
     DingTalkQrCreateResponse,
     DingTalkQrStatusResponse,
+    RefreshTokenRequest,
 )
 
 router = APIRouter(prefix="/auth")
@@ -30,6 +33,18 @@ async def dingtalk_login(result: AuthenticationResult = Depends(authenticate_use
 @router.get("/me", response_model=CurrentUser)
 async def me(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
     return current_user
+
+
+@router.post("/refresh", response_model=AuthTokensResponse)
+async def refresh_tokens(
+    payload: RefreshTokenRequest,
+    use_case: RefreshTokenUseCase = Depends(get_refresh_token_use_case),
+) -> AuthTokensResponse:
+    try:
+        result = await use_case.execute(payload.refresh_token)
+    except AuthenticationFailedError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    return AuthTokensResponse(user=result.user, tokens=result.tokens)
 
 
 @router.post(

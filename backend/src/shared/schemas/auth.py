@@ -109,6 +109,16 @@ class AuthTokensResponse(BaseModel):
     tokens: TokenPair
 
 
+class RefreshTokenRequest(BaseModel):
+    """刷新 Token 请求."""
+
+    refresh_token: str = Field(..., alias="refreshToken", min_length=1)
+
+    model_config = {
+        "populate_by_name": True,
+    }
+
+
 class DingTalkQrCreateRequest(BaseModel):
     """生成二维码的请求."""
 

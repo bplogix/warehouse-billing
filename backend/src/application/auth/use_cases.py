@@ -80,3 +80,25 @@ class AuthorizeRequestService:
         bind_contextvars(user_id=current_user.user_id)
         logger.info("request authorized", user_id=current_user.user_id)
         return current_user
+
+
+class RefreshTokenUseCase:
+    """根据 refresh token 颁发新的 token 对."""
+
+    def __init__(self, token_service: TokenService) -> None:
+        self._token_service = token_service
+
+    def execute(self, refresh_token: str) -> AuthenticationResult:
+        if not refresh_token:
+            raise AuthenticationFailedError("refresh token is required")
+
+        try:
+            claims = self._token_service.decode(refresh_token, verify_type="refresh")
+        except TokenVerificationError as exc:
+            logger.warning("refresh token invalid", reason=str(exc))
+            raise AuthenticationFailedError("invalid refresh token") from exc
+
+        current_user = self._token_service.build_current_user(claims)
+        tokens = self._token_service.create_token_pair(current_user, claims.trace_id)
+        logger.info("token refreshed", user_id=current_user.user_id)
+        return AuthenticationResult(user=current_user, tokens=tokens)
