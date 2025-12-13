@@ -46,11 +46,14 @@ class ExternalMySQLDatabase:
         self._engine = create_async_engine(
             url,
             pool_size=mysql_settings.POOL_SIZE,
+            pool_pre_ping=True,
+            pool_recycle=1800,
             connect_args={"connect_timeout": mysql_settings.CONNECT_TIMEOUT},
         )
         self._session_factory = async_sessionmaker(
             self._engine,
             expire_on_commit=False,
+            autoflush=False
         )
         logger.info("external mysql engine initialized")
 
@@ -86,7 +89,11 @@ class ExternalMySQLDatabase:
             self.init_engine()
         if self._session_factory is None:
             raise RuntimeError("External MySQL session factory unavailable")
+
         async with self._session_factory() as session:
+            await session.execute(text("SET SESSION TRANSACTION READ ONLY"))
+            await session.execute(text("SET autocommit = 1"))
+
             yield session
 
 
