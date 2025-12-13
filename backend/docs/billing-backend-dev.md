@@ -63,6 +63,7 @@
 | 删除模板 | DELETE `/api/v1/billing/templates/{id}` | 软删并返回 204；关联报价单标记为 INACTIVE |
 | 列表报价单 | GET `/api/v1/billing/quotes` | 支持按 `templateId/customerId/customerGroupId/status` 过滤（可选，用于计费消费侧） |
 | 获取报价单 | GET `/api/v1/billing/quotes/{id}` | 返回已快照的规则与 `payload` 元信息（可选） |
+| 客户生效报价 | GET `/api/v1/customers/{customerId}/quote` | 路由在 Customers 组内，系统按「客户 → 客户组 → GLOBAL」优先级返回当前生效报价，未命中返回 404 |
 
 ## 5. 报价单快照策略
 - **报价单快照**：模板保存时（创建/更新）立即生成一条 `Quote` 记录，该记录携带模板与规则的完整 JSON 快照，避免后续模板编辑影响正在生效的计费。

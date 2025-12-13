@@ -10,6 +10,7 @@ from src.application.billing.use_cases import (
     GetBillingTemplateDetailUseCase,
     QueryBillingQuotesUseCase,
     QueryBillingTemplatesUseCase,
+    ResolveCustomerQuoteUseCase,
     UpdateBillingTemplateUseCase,
 )
 from src.intrastructure.database.postgres import get_postgres_session
@@ -49,6 +50,12 @@ def get_billing_quote_detail_use_case(
     session: AsyncSession = Depends(get_postgres_session),
 ) -> GetBillingQuoteDetailUseCase:
     return GetBillingQuoteDetailUseCase(session=session)
+
+
+def get_resolve_customer_quote_use_case(
+    session: AsyncSession = Depends(get_postgres_session),
+) -> ResolveCustomerQuoteUseCase:
+    return ResolveCustomerQuoteUseCase(session=session)
 
 
 def get_delete_billing_template_use_case(

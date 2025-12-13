@@ -4,6 +4,7 @@ from .commands import (
     CreateBillingTemplateCommand,
     QueryBillingQuotesCommand,
     QueryBillingTemplatesCommand,
+    ResolveCustomerQuoteCommand,
     TemplateRuleInput,
     TemplateRuleTierInput,
     UpdateBillingTemplateCommand,
@@ -15,6 +16,7 @@ from .use_cases import (
     GetBillingTemplateDetailUseCase,
     QueryBillingQuotesUseCase,
     QueryBillingTemplatesUseCase,
+    ResolveCustomerQuoteUseCase,
     UpdateBillingTemplateUseCase,
 )
 
@@ -25,6 +27,7 @@ __all__ = [
     "UpdateBillingTemplateCommand",
     "QueryBillingTemplatesCommand",
     "QueryBillingQuotesCommand",
+    "ResolveCustomerQuoteCommand",
     "CreateBillingTemplateUseCase",
     "UpdateBillingTemplateUseCase",
     "DeleteBillingTemplateUseCase",
@@ -32,4 +35,5 @@ __all__ = [
     "GetBillingTemplateDetailUseCase",
     "QueryBillingQuotesUseCase",
     "GetBillingQuoteDetailUseCase",
+    "ResolveCustomerQuoteUseCase",
 ]

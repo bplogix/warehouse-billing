@@ -56,7 +56,7 @@ class CustomerCreateSchema(CamelModel):
     @field_validator("customer_code")
     @classmethod
     def validate_customer_code(cls, value: str) -> str:
-        code_pattern = re.compile(r"^WS-\d+$")
+        code_pattern = re.compile(r"^WMS-\d+$")
         if not code_pattern.fullmatch(value):
             raise ValueError("customer_code must start with 'WS-' followed by digits")
         return value

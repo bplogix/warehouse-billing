@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -115,3 +116,44 @@ class BillingQuoteRepository:
         for quote in quotes:
             quote.status = QuoteStatus.INACTIVE.value
         await self._session.flush()
+
+    async def find_active_quote(
+        self,
+        *,
+        scope: QuoteScope,
+        business_domain: str,
+        now: datetime,
+        customer_id: int | None = None,
+        customer_group_id: int | None = None,
+    ) -> BillingQuote | None:
+        stmt = select(BillingQuote).where(
+            BillingQuote.business_domain == business_domain,
+            BillingQuote.status == QuoteStatus.ACTIVE.value,
+            BillingQuote.is_deleted.is_(False),
+            BillingQuote.effective_date <= now,
+            or_(BillingQuote.expire_date.is_(None), BillingQuote.expire_date > now),
+        )
+        if scope is QuoteScope.CUSTOMER:
+            if customer_id is None:
+                raise ValueError("customer_id is required for customer scoped quotes")
+            stmt = stmt.where(
+                BillingQuote.scope_type == QuoteScope.CUSTOMER.value,
+                BillingQuote.customer_id == customer_id,
+            )
+        elif scope is QuoteScope.GROUP:
+            if customer_group_id is None:
+                raise ValueError("customer_group_id is required for group scoped quotes")
+            stmt = stmt.where(
+                BillingQuote.scope_type == QuoteScope.GROUP.value,
+                BillingQuote.customer_group_id == customer_group_id,
+            )
+        else:
+            stmt = stmt.where(
+                BillingQuote.scope_type == QuoteScope.GLOBAL.value,
+                BillingQuote.customer_id.is_(None),
+                BillingQuote.customer_group_id.is_(None),
+            )
+
+        stmt = stmt.order_by(BillingQuote.updated_at.desc()).limit(1)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

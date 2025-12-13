@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, status
 
+from src.application.billing.commands import ResolveCustomerQuoteCommand
+from src.application.billing.use_cases import ResolveCustomerQuoteUseCase
 from src.application.customer.commands import (
     CreateCompanyCommand,
     CreateCustomerCommand,
@@ -26,6 +28,7 @@ from src.application.customer.use_cases import (
 )
 from src.domain.customer import CustomerStatus
 from src.presentation.dependencies.auth import get_current_user
+from src.presentation.dependencies.billing import get_resolve_customer_quote_use_case
 from src.presentation.dependencies.customer import (
     get_create_customer_use_case,
     get_customer_detail_use_case,
@@ -36,6 +39,7 @@ from src.presentation.dependencies.customer import (
     get_query_external_companies_use_case,
     get_update_customer_status_use_case,
 )
+from src.presentation.schema.billing import BillingQuoteSchema
 from src.presentation.schema.customer import (
     CustomerCreateRequest,
     CustomerDetailResponse,
@@ -125,6 +129,23 @@ async def get_customer_detail(
     if customer is None:
         raise AppError(message="Customer not found", code=status.HTTP_404_NOT_FOUND)
     return SuccessResponse(data=CustomerDetailResponse.from_model(customer))
+
+
+@router.get("/{customer_id}/quote", response_model=SuccessResponse[BillingQuoteSchema])
+async def get_customer_effective_quote(
+    customer_id: int,
+    current_user: CurrentUser = Depends(get_current_user),
+    use_case: ResolveCustomerQuoteUseCase = Depends(get_resolve_customer_quote_use_case),
+) -> SuccessResponse[BillingQuoteSchema]:
+    """根据客户→客户组→全局优先级获取生效报价."""
+    cmd = ResolveCustomerQuoteCommand(customer_id=customer_id)
+    quote = await use_case.execute(cmd)
+    if quote is None:
+        raise AppError(
+            message=f"No active quote found for customer {customer_id}",
+            code=status.HTTP_404_NOT_FOUND,
+        )
+    return SuccessResponse(data=BillingQuoteSchema.from_model(quote))
 
 
 @router.patch("/{customer_id}/status", status_code=status.HTTP_204_NO_CONTENT)

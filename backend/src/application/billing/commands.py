@@ -80,3 +80,8 @@ class QueryBillingQuotesCommand:
     status: QuoteStatus | None = None
     limit: int = 20
     offset: int = 0
+
+
+@dataclass(slots=True)
+class ResolveCustomerQuoteCommand:
+    customer_id: int

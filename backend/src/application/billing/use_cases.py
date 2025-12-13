@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from src.application.billing.commands import (
     CreateBillingTemplateCommand,
     QueryBillingQuotesCommand,
     QueryBillingTemplatesCommand,
+    ResolveCustomerQuoteCommand,
     TemplateRuleInput,
     TemplateRuleTierInput,
     UpdateBillingTemplateCommand,
@@ -30,7 +31,11 @@ from src.domain.billing.entities import (
 from src.domain.customer import BusinessDomainGuard
 from src.intrastructure.database.models import BillingQuote, BillingTemplate, BillingTemplateRule
 from src.intrastructure.database.models.billing import TemplateRuleTierRecord
-from src.intrastructure.repositories import BillingQuoteRepository, BillingTemplateRepository
+from src.intrastructure.repositories import (
+    BillingQuoteRepository,
+    BillingTemplateRepository,
+    CustomerRepository,
+)
 from src.shared.logger.factories import app_logger
 from src.shared.utils.random import generate_urlsafe_code
 
@@ -214,6 +219,54 @@ class GetBillingQuoteDetailUseCase:
         guard = BusinessDomainGuard.from_context()
         guard.ensure_access(quote.business_domain)
         return quote
+
+
+class ResolveCustomerQuoteUseCase:
+    """根据客户→客户组→全局优先级获取生效中的报价单."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._quote_repo = BillingQuoteRepository(session)
+        self._customer_repo = CustomerRepository(session)
+
+    async def execute(self, cmd: ResolveCustomerQuoteCommand) -> BillingQuote | None:
+        customer = await self._customer_repo.get_detail(cmd.customer_id)
+        if customer is None:
+            return None
+
+        guard = BusinessDomainGuard.from_context()
+        guard.ensure_access(customer.business_domain)
+
+        now = datetime.now(UTC)
+        quote = await self._quote_repo.find_active_quote(
+            scope=QuoteScope.CUSTOMER,
+            business_domain=customer.business_domain,
+            now=now,
+            customer_id=customer.id,
+        )
+        if quote is not None:
+            return quote
+
+        group_members = sorted(
+            (member for member in customer.groups if not member.is_deleted),
+            key=lambda member: member.assigned_at or datetime.min.replace(tzinfo=UTC),
+            reverse=True,
+        )
+        for member in group_members:
+            quote = await self._quote_repo.find_active_quote(
+                scope=QuoteScope.GROUP,
+                business_domain=customer.business_domain,
+                now=now,
+                customer_group_id=member.group_id,
+            )
+            if quote is not None:
+                return quote
+
+        return await self._quote_repo.find_active_quote(
+            scope=QuoteScope.GLOBAL,
+            business_domain=customer.business_domain,
+            now=now,
+        )
 
 
 class DeleteBillingTemplateUseCase:
