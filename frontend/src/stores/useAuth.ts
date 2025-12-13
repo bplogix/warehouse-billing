@@ -10,6 +10,7 @@ export interface AuthState {
   token: {
     accessToken: string | null // 访问密钥
     refreshToken: string | null // 刷新密钥
+    expiresAt: number | null // 访问密钥过期时间戳
   }
   user: UserInfo | null // 用户信息
   permissions: string[] // 权限
@@ -22,6 +23,7 @@ const initialState: AuthState = {
   token: {
     accessToken: null,
     refreshToken: null,
+    expiresAt: null,
   },
   user: null,
   permissions: [],
@@ -34,11 +36,19 @@ interface AuthActions {
     user: UserInfo,
     permissions?: string[],
     loginType?: AuthState['loginType'],
+    expiresIn?: number,
   ) => void
   setUser: (user: UserInfo) => void
   setLoginType: (type: 'enterprise' | 'qrcode' | null) => void
   clearAuth: () => void
-  updateToken: (token: string, refreshToken?: string) => void
+  updateToken: (token: string, refreshToken?: string, expiresIn?: number) => void
+}
+
+const computeExpiresAt = (expiresIn?: number) => {
+  if (typeof expiresIn !== 'number' || Number.isNaN(expiresIn)) {
+    return null
+  }
+  return Date.now() + expiresIn * 1000
 }
 
 export const useAuthStore = create<AuthState & AuthActions>()(
@@ -46,12 +56,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     (set, get) => ({
       ...initialState,
 
-      setAuth: (token, refreshToken, user, permissions, loginType) => {
+      setAuth: (token, refreshToken, user, permissions, loginType, expiresIn) => {
         set({
           isAuthenticated: true,
           token: {
             accessToken: token,
             refreshToken,
+            expiresAt: computeExpiresAt(expiresIn),
           },
           user,
           permissions: permissions ?? [],
@@ -74,12 +85,16 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         })
       },
 
-      updateToken: (token, refreshToken) => {
+      updateToken: (token, refreshToken, expiresIn) => {
         const currentTokenState = get().token
         set({
           token: {
             accessToken: token,
             refreshToken: refreshToken || currentTokenState.refreshToken,
+            expiresAt:
+              typeof expiresIn === 'number'
+                ? computeExpiresAt(expiresIn)
+                : currentTokenState.expiresAt,
           },
         })
       },

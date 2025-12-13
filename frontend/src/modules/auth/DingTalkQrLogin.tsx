@@ -143,6 +143,7 @@ const DingTalkQrLogin = () => {
           userInfo,
           permissions,
           'qrcode',
+          data.tokens.expires_in,
         )
         toast.success('登录成功')
         navigate(redirectPath)

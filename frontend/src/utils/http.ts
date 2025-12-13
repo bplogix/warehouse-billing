@@ -2,16 +2,28 @@ import axios, {
   type AxiosError,
   type AxiosRequestConfig,
   type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from 'axios'
 import { toast } from 'sonner'
 
 import type { ApiResponse } from '@/types/common'
 import { useAuthStore } from '@/stores/useAuth'
 import { ApiError } from '../constants/error'
+import {
+  ensureValidAccessToken,
+  redirectToLogin,
+  requestTokenRefresh,
+} from './http/refresh'
+
+const API_BASE_URL = 'http://localhost:8000' // 改成你的 API 地址
+
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean
+}
 
 // 创建 axios 实例
 const http = axios.create({
-  baseURL: 'http://localhost:8000', // 改成你的 API 地址
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,14 +31,31 @@ const http = axios.create({
   withCredentials: false, // 允许携带 Cookie 进行跨域请求
 })
 
-// 请求拦截器：统一追加鉴权头
-http.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token.accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+const attachAuthHeader = (
+  config: InternalAxiosRequestConfig | RetryableRequestConfig,
+  token: string | null,
+) => {
+  if (!token) {
+    return
   }
-  return config
-})
+  const headers =
+    config.headers instanceof axios.AxiosHeaders
+      ? config.headers
+      : new axios.AxiosHeaders(config.headers)
+  headers.set('Authorization', `Bearer ${token}`)
+  config.headers = headers
+}
+
+// 请求拦截器：统一追加鉴权头
+http.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    await ensureValidAccessToken()
+    const token = useAuthStore.getState().token.accessToken
+    attachAuthHeader(config, token)
+    return config
+  },
+  (error) => Promise.reject(error),
+)
 
 // 响应拦截器：处理鉴权和错误提示（不解包 data，解包在 API 层完成）
 http.interceptors.response.use(
@@ -44,10 +73,30 @@ http.interceptors.response.use(
     }
     return response
   },
-  (error: AxiosError<ApiResponse>) => {
+  async (error: AxiosError<ApiResponse>) => {
     console.log('Api Error')
     let errorMessage = 'リクエストが失敗しました'
     let errorCode = 500
+    const originalRequest = error.config as RetryableRequestConfig | undefined
+
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true
+      try {
+        const newToken = await requestTokenRefresh()
+        if (newToken) {
+          attachAuthHeader(originalRequest, newToken)
+          return http(originalRequest)
+        }
+      } catch (refreshError) {
+        // refreshToken 内部已经处理了登出/重定向，这里继续向下走统一错误提示
+        error = refreshError as AxiosError<ApiResponse>
+      }
+    }
 
     if (error.response) {
       const res = error.response.data
@@ -55,8 +104,7 @@ http.interceptors.response.use(
       errorMessage = (res && res.message) || 'リクエストが失失败'
 
       if (errorCode === 401 || errorCode === 403) {
-        useAuthStore.getState().clearAuth()
-        window.location.assign('/login/dingtalk')
+        redirectToLogin()
       }
     } else if (error.request) {
       errorMessage = 'サーバーに接続できません'

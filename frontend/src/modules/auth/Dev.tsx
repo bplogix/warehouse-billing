@@ -102,6 +102,7 @@ const AuthDev: FC = () => {
       mockUser,
       role.permissions,
       'enterprise',
+      3600,
     )
 
     setIsLoading(false)
