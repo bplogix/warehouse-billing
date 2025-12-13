@@ -1,58 +1,54 @@
+from __future__ import annotations
+
 import logging
 import sys
 
-import structlog
 from rich.logging import RichHandler
+from structlog.stdlib import ProcessorFormatter
 
 from src.shared.config import settings
 from src.shared.logger.formatters import get_dev_renderer, get_json_renderer
+from src.shared.logger.setup_utils import build_pre_chain, configure_structlog, reset_root_logger, silence_third_party
 
 
-def setup_logging():
-    """
-    根据 Settings 自动初始化日志系统
-    """
-    fmt = settings.log.LOG_FORMAT.lower()
+def setup_logging() -> None:
+    """根据配置初始化日志系统（dev=Rich，prod=JSON）."""
+    fmt = (settings.log.LOG_FORMAT or "prod").lower()
+    level_name = (settings.log.LOG_LEVEL or "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
 
-    # 先清空 root handlers，避免重复绑定
-    root_logger = logging.getLogger()
-    root_logger.handlers.clear()
-    root_logger.setLevel(logging.INFO)
+    root = reset_root_logger(level)
 
-    # 明确声明 handler 是“所有 Handler 的父类”
-    handler: logging.Handler
-
-    # dev 环境：rich 彩色输出
     if fmt == "dev":
-        handler = RichHandler(
-            rich_tracebacks=True,
-            markup=True,
-            show_time=False,
-            omit_repeated_times=False,
-        )
-        renderer = get_dev_renderer()
+        handler = _create_dev_handler()
     else:
-        # prod 环境：JSON 输出
-        handler = logging.StreamHandler(sys.stdout)
-        renderer = get_json_renderer()
+        handler = _create_prod_handler()
 
-    logging.basicConfig(
-        level=settings.log.LOG_LEVEL,
-        handlers=[handler],
-        format="%(message)s",
-    )
+    root.addHandler(handler)
 
-    # structlog 配置
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,  # ← 关键：不用 rich_traceback
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-            # renderer,
-        ],
-        wrapper_class=structlog.stdlib.BoundLogger,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
+    configure_structlog()
+    silence_third_party(level)
+
+
+def _create_dev_handler() -> logging.Handler:
+    """Rich + structlog 输出，适合本地调试."""
+    handler = RichHandler(markup=True, rich_tracebacks=True, show_time=False, show_path=False)
+    handler.setFormatter(
+        ProcessorFormatter(
+            processor=get_dev_renderer(),
+            foreign_pre_chain=build_pre_chain(),
+        )
     )
+    return handler
+
+
+def _create_prod_handler() -> logging.Handler:
+    """JSON 输出（生产环境）."""
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(
+        ProcessorFormatter(
+            processor=get_json_renderer(),
+            foreign_pre_chain=build_pre_chain(),
+        )
+    )
+    return handler

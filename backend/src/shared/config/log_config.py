@@ -1,11 +1,14 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class LogSettings(BaseSettings):
-    LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "dev"  # dev | prod
-    LOG_ENABLE_COLOR: bool = True
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
-    class Config:
-        env_prefix = "LOG_"  # 允许 LOG_FORMAT, LOG_LEVEL 环境变量覆盖
-        case_sensitive = False
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "prod"  # dev | prod
+    LOG_ENABLE_COLOR: bool = True

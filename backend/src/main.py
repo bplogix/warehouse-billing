@@ -11,12 +11,15 @@ DDD 架构
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from src.intrastructure.cache.redis import close_redis, init_redis
 from src.intrastructure.database.mysql_external import external_mysql_db
 from src.intrastructure.database.postgres import postgres_db
 from src.presentation.api import router
 from src.shared.config import settings
+from src.shared.error.app_error import handle_validation_error
 from src.shared.logger import setup_logging
 from src.shared.logger.middlewares import RequestContextMiddleware
 from src.shared.middlewares.cors import CORSHandleMiddleware
@@ -29,6 +32,7 @@ async def lifespan(app: FastAPI):
 
     # ⚡ [启动阶段] 初始化日志系统自动读取 settings.log.*
     setup_logging()
+
     try:
         # 启动时初始化
         await postgres_db.connect()
@@ -50,11 +54,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# 添加异常处理中间件
+app.add_exception_handler(RequestValidationError, handle_validation_error)
+app.add_exception_handler(ValidationError, handle_validation_error)
+app.add_middleware(ExceptionHandlerMiddleware)
+
 # ⚡ middleware 必须在 app 实例创建后挂载
 app.add_middleware(RequestContextMiddleware)
-
-# 添加异常处理中间件
-app.add_middleware(ExceptionHandlerMiddleware)
 
 # 添加 CORS 中间件
 app.add_middleware(CORSHandleMiddleware)
