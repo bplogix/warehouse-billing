@@ -40,9 +40,11 @@ type CustomerFormValues = {
   selectedCompanyId?: string
 }
 
+const CUSTOMER_CODE_PREFIX = 'WMS-'
+
 const defaultValues: CustomerFormValues = {
   customerName: '',
-  customerCode: '',
+  customerCode: CUSTOMER_CODE_PREFIX,
   status: 'ACTIVE',
   companyName: '',
   companyCode: '',
@@ -80,6 +82,7 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
     name.replace(/[\d\p{P}\p{S}]/gu, '').trim()
 
   const normalizeCodeValue = (value: string) => value.toUpperCase()
+  const sanitizeNumericValue = (value: string) => value.replace(/\D/g, '')
 
   const isCodePatternValid = (value: string) => {
     const isDigitsOnly = /^\d+$/.test(value)
@@ -99,12 +102,29 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
     return `${label}仅支持纯数字或大写英文+数字组合`
   }
 
-  const stripCustomerPrefix = (value: string) =>
-    value.startsWith('WS-') ? value.slice(3) : value
+  const stripCustomerPrefix = (value: string) => {
+    if (!value) return ''
+    if (value.startsWith(CUSTOMER_CODE_PREFIX)) {
+      return value.slice(CUSTOMER_CODE_PREFIX.length)
+    }
+    if (value.startsWith('WS-')) {
+      return value.slice(3)
+    }
+    return value
+  }
 
-  const buildCustomerCode = (companyCode: string) => {
-    if (!companyCode) return ''
-    return `WS-${companyCode}`
+  const buildCustomerCode = (numericPart: string) => {
+    return `${CUSTOMER_CODE_PREFIX}${sanitizeNumericValue(numericPart)}`
+  }
+
+  const validateCustomerCode = (value: string) => {
+    const digits = stripCustomerPrefix(value)
+    if (!digits) return '请输入客户编码数字部分'
+    if (!/^\d+$/.test(digits)) return '客户编码仅支持数字'
+    if (!value.startsWith(CUSTOMER_CODE_PREFIX)) {
+      return `客户编码前缀需为 ${CUSTOMER_CODE_PREFIX}`
+    }
+    return true
   }
 
   const handleSelectCompany = (company: ExternalCompany) => {
@@ -112,10 +132,13 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
     const normalizedCompanyCode = normalizeCodeValue(
       company.companyCode ?? '',
     )
+    const customerCodeDigits = sanitizeNumericValue(
+      company.companyCode ?? '',
+    )
     form.setValue('companyName', sanitizedName)
     form.setValue('customerName', sanitizedName)
     form.setValue('companyCode', normalizedCompanyCode)
-    form.setValue('customerCode', buildCustomerCode(normalizedCompanyCode))
+    form.setValue('customerCode', buildCustomerCode(customerCodeDigits))
     form.setValue('selectedCompanyId', company.companyId)
   }
 
@@ -144,7 +167,9 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
     if (onCreated) {
       onCreated(id)
     }
-    form.reset(defaultValues)
+    if (id) {
+      form.reset(defaultValues)
+    }
   }
 
   return (
@@ -247,22 +272,29 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
             control={form.control}
             name="customerCode"
             rules={{
-              required: '请输入客户编码',
-              validate: (value) =>
-                validateCode(stripCustomerPrefix(value), '客户编码'),
+              validate: validateCustomerCode,
             }}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>客户编码</FormLabel>
                 <FormControl>
-                  <Input
-                    {...field}
-                    onChange={(event) =>
-                      field.onChange(
-                        normalizeCodeValue(event.target.value),
-                      )
-                    }
-                  />
+                  <div className="flex overflow-hidden rounded-md border border-input">
+                    <span className="inline-flex items-center bg-muted px-3 text-sm text-muted-foreground">
+                      {CUSTOMER_CODE_PREFIX}
+                    </span>
+                    <Input
+                      {...field}
+                      value={stripCustomerPrefix(field.value ?? '')}
+                      onChange={(event) =>
+                        field.onChange(
+                          buildCustomerCode(event.target.value),
+                        )
+                      }
+                      className="flex-1 rounded-l-none border-0"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

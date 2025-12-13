@@ -1,6 +1,7 @@
 import { apiGet, apiPatch, apiPost, apiPut } from '@/utils/http'
 
 import type {
+  BillingQuote,
   CustomerCreatePayload,
   CustomerDetail,
   CustomerListResponse,
@@ -45,3 +46,6 @@ export const replaceGroupMembers = (groupId: number, memberIds: number[]) =>
   apiPut<CustomerGroup>(`/api/v1/customer-groups/${groupId}/members`, {
     memberIds,
   })
+
+export const fetchCustomerQuote = (customerId: number) =>
+  apiGet<BillingQuote>(`/api/v1/customers/${customerId}/quote`)

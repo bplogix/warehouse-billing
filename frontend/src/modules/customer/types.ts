@@ -99,3 +99,58 @@ export interface CustomerGroupCreatePayload {
   description?: string | null
   memberIds?: number[]
 }
+
+export type QuoteStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface QuoteRuleTier {
+  minValue: number
+  maxValue: number | null
+  price: number
+  description?: string | null
+}
+
+export interface QuoteRulePayload {
+  chargeCode: string
+  chargeName: string
+  category: string
+  channel: string
+  unit: string
+  pricingMode: string
+  price: number | null
+  tiers: QuoteRuleTier[] | null
+  description?: string | null
+  supportOnly: boolean
+}
+
+export interface QuoteTemplatePayload {
+  templateCode: string
+  templateName: string
+  templateType: string
+  businessDomain: string
+  description?: string | null
+  effectiveDate: string
+  expireDate?: string | null
+  customerId?: number | null
+  customerGroupId?: number | null
+}
+
+export interface BillingQuotePayload {
+  template: QuoteTemplatePayload
+  rules: QuoteRulePayload[]
+}
+
+export interface BillingQuote {
+  id: number
+  quoteCode: string
+  templateId: number
+  scopeType: string
+  scopePriority: number
+  customerId?: number | null
+  customerGroupId?: number | null
+  businessDomain: string
+  status: QuoteStatus
+  effectiveDate: string
+  expireDate?: string | null
+  payload: BillingQuotePayload
+  createdAt: string
+}
