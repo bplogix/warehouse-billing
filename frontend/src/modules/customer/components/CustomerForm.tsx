@@ -86,8 +86,9 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
 
   const isCodePatternValid = (value: string) => {
     const isDigitsOnly = /^\d+$/.test(value)
-    const isUppercaseAlphanumericCombo =
-      /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]+$/.test(value)
+    const isUppercaseAlphanumericCombo = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]+$/.test(
+      value,
+    )
     return isDigitsOnly || isUppercaseAlphanumericCombo
   }
 
@@ -129,12 +130,8 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
 
   const handleSelectCompany = (company: ExternalCompany) => {
     const sanitizedName = sanitizeName(company.companyName)
-    const normalizedCompanyCode = normalizeCodeValue(
-      company.companyCode ?? '',
-    )
-    const customerCodeDigits = sanitizeNumericValue(
-      company.companyCode ?? '',
-    )
+    const normalizedCompanyCode = normalizeCodeValue(company.companyCode ?? '')
+    const customerCodeDigits = sanitizeNumericValue(company.companyCode ?? '')
     form.setValue('companyName', sanitizedName)
     form.setValue('customerName', sanitizedName)
     form.setValue('companyCode', normalizedCompanyCode)
@@ -242,9 +239,7 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
                   <Input
                     {...field}
                     onChange={(event) =>
-                      field.onChange(
-                        normalizeCodeValue(event.target.value),
-                      )
+                      field.onChange(normalizeCodeValue(event.target.value))
                     }
                   />
                 </FormControl>
@@ -286,9 +281,7 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
                       {...field}
                       value={stripCustomerPrefix(field.value ?? '')}
                       onChange={(event) =>
-                        field.onChange(
-                          buildCustomerCode(event.target.value),
-                        )
+                        field.onChange(buildCustomerCode(event.target.value))
                       }
                       className="flex-1 rounded-l-none border-0"
                       inputMode="numeric"
@@ -309,7 +302,9 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
                 <Select
                   name={field.name}
                   value={field.value}
-                  onValueChange={(value: CustomerStatus) => field.onChange(value)}
+                  onValueChange={(value: CustomerStatus) =>
+                    field.onChange(value)
+                  }
                 >
                   <FormControl>
                     <SelectTrigger>

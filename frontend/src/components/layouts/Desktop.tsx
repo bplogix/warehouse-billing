@@ -9,12 +9,13 @@ import { cn } from '@/utils/utils'
 import {
   Boxes,
   Building2,
+  Car,
   LayoutDashboard,
+  LogOut,
   Menu,
   ReceiptText,
   Settings,
   Users,
-  LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -39,6 +40,12 @@ const navItems = [
     path: '/billing',
     icon: Boxes,
     description: '模板与规则管理',
+  },
+  {
+    label: '承运商管理',
+    path: '/carriers',
+    icon: Car,
+    description: '承运商档案与服务配置',
   },
   {
     label: '仓储操作',
@@ -96,6 +103,13 @@ const subNavConfig: Record<
       label: '客户报价',
       description: '管理客户专属报价单',
       path: '/customer/quotes',
+    },
+  ],
+  '/carriers': [
+    {
+      label: '承运商控制台',
+      description: '在同一页面维护承运商与服务',
+      path: '/carriers',
     },
   ],
 }

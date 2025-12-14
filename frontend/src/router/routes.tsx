@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom'
 
 import BillingModule from '@/modules/billing'
 import BillingPage from '@/modules/billing/Default'
+import CarrierDashboard from '@/modules/carrier/Default'
 import AddCustomer from '@/modules/customer/AddCustomer'
 import CustomerGroups from '@/modules/customer/CustomerGroups'
 import CustomerQuotes from '@/modules/customer/CustomerQuotes'
@@ -63,6 +64,10 @@ export const routeConfig: RouteObject[] = [
           { path: 'group', element: <BillingModule /> },
           { path: 'custom', element: <BillingModule /> },
         ],
+      },
+      {
+        path: 'carriers',
+        element: <CarrierDashboard />,
       },
       {
         path: 'warehouse',

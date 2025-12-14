@@ -115,7 +115,7 @@ const CustomerQuotes = () => {
     }
   }, [])
 
-const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
       void performSearch()
@@ -130,7 +130,9 @@ const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
       {
         label: '报价状态',
         value: (
-          <Badge variant={quote.status === 'ACTIVE' ? 'default' : 'destructive'}>
+          <Badge
+            variant={quote.status === 'ACTIVE' ? 'default' : 'destructive'}
+          >
             {statusLabel[quote.status] ?? quote.status}
           </Badge>
         ),
@@ -191,8 +193,7 @@ const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
                   className="flex items-center justify-between rounded border border-dashed px-3 py-1.5"
                 >
                   <span>
-                    {tier.minValue} -{' '}
-                    {tier.maxValue ?? '∞'}
+                    {tier.minValue} - {tier.maxValue ?? '∞'}
                     {rule.unit}
                   </span>
                   <span className="font-medium">
@@ -310,7 +311,11 @@ const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
             <>
               <div className="grid gap-3 md:grid-cols-2">
                 {infoRows.map((row) => (
-                  <InfoRow key={row.label} label={row.label} value={row.value} />
+                  <InfoRow
+                    key={row.label}
+                    label={row.label}
+                    value={row.value}
+                  />
                 ))}
               </div>
               <div className="space-y-3">
