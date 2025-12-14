@@ -6,8 +6,8 @@ import axios, {
 } from 'axios'
 import { toast } from 'sonner'
 
-import type { ApiResponse } from '@/types/common'
 import { useAuthStore } from '@/stores/useAuth'
+import type { ApiResponse } from '@/types/common'
 import { ApiError } from '../constants/error'
 import {
   ensureValidAccessToken,
@@ -15,7 +15,7 @@ import {
   requestTokenRefresh,
 } from './http/refresh'
 
-const API_BASE_URL = 'http://localhost:8000' // 改成你的 API 地址
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000' // 改成你的 API 地址
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
