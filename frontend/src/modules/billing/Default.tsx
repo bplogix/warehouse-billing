@@ -176,7 +176,9 @@ const BillingOverview = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{card.value}</p>
-                  <p className="text-xs text-muted-foreground">{card.subline}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {card.subline}
+                  </p>
                 </div>
               </CardHeader>
               <CardContent className="p-5 pt-0">
@@ -281,8 +283,7 @@ const BillingOverview = () => {
               <CardDescription>自动检测配置冲突与同步告警</CardDescription>
             </div>
             <Badge variant="outline" className="flex items-center gap-1">
-              <BellRing className="h-4 w-4" />
-              2 条告警
+              <BellRing className="h-4 w-4" />2 条告警
             </Badge>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">

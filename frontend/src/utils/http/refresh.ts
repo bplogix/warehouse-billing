@@ -51,11 +51,12 @@ export const requestTokenRefresh = async () => {
 
   if (!refreshPromise) {
     refreshPromise = refreshHttp
-      .post<
-        ApiResponse<AuthTokensResponsePayload> | AuthTokensResponsePayload
-      >(TOKEN_REFRESH_ENDPOINT, {
-        refreshToken,
-      })
+      .post<ApiResponse<AuthTokensResponsePayload> | AuthTokensResponsePayload>(
+        TOKEN_REFRESH_ENDPOINT,
+        {
+          refreshToken,
+        },
+      )
       .then((response) => {
         const body = response.data
         if (

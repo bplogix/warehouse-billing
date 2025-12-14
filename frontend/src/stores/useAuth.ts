@@ -41,7 +41,11 @@ interface AuthActions {
   setUser: (user: UserInfo) => void
   setLoginType: (type: 'enterprise' | 'qrcode' | null) => void
   clearAuth: () => void
-  updateToken: (token: string, refreshToken?: string, expiresIn?: number) => void
+  updateToken: (
+    token: string,
+    refreshToken?: string,
+    expiresIn?: number,
+  ) => void
 }
 
 const computeExpiresAt = (expiresIn?: number) => {
@@ -56,7 +60,14 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     (set, get) => ({
       ...initialState,
 
-      setAuth: (token, refreshToken, user, permissions, loginType, expiresIn) => {
+      setAuth: (
+        token,
+        refreshToken,
+        user,
+        permissions,
+        loginType,
+        expiresIn,
+      ) => {
         set({
           isAuthenticated: true,
           token: {
