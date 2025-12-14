@@ -10,8 +10,26 @@ TMP_DIR="$SCRIPT_DIR/tmps"
 
 export PATH="$BIN_DIR:$PATH"
 
-# 加载环境变量
-ENV_FILE=${ENV_FILE:-"$SCRIPT_DIR/../.env"}  # 按实际路径调整
+# 导入工具函数（日志工具要尽早加载，方便后续脚本使用）
+if [ -f "$SCRIPT_DIR/scripts/log.sh" ]; then
+  source "$SCRIPT_DIR/scripts/log.sh"
+else
+  echo "[WARNING] Missing log helper at $SCRIPT_DIR/scripts/log.sh"
+fi
+
+# 数据库迁移工具函数
+if [ -f "$SCRIPT_DIR/scripts/migration.sh" ]; then
+  source "$SCRIPT_DIR/scripts/migration.sh"
+else
+  log_warning "Missing migration helpers at $SCRIPT_DIR/scripts/migration.sh"
+fi
+
+# 加载环境变量（优先使用 backend/.env，其次允许外部覆盖或 fallback 到项目根）
+DEFAULT_ENV_FILE="$SCRIPT_DIR/.env"
+if [ ! -f "$DEFAULT_ENV_FILE" ] && [ -f "$SCRIPT_DIR/../.env" ]; then
+  DEFAULT_ENV_FILE="$SCRIPT_DIR/../.env"
+fi
+ENV_FILE=${ENV_FILE:-"$DEFAULT_ENV_FILE"}
 
 if [ -f "$ENV_FILE" ]; then
   set -a           # 自动导出
@@ -20,10 +38,6 @@ if [ -f "$ENV_FILE" ]; then
 else
   log_warning "未找到环境文件 $ENV_FILE"
 fi
-
-# 导入工具函数
-source "$SCRIPT_DIR/scripts/log.sh"
-source "$SCRIPT_DIR/scripts/migration.sh"
 
 mkdir -p "$LOG_DIR" "$TMP_DIR"
 

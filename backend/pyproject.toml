@@ -20,6 +20,7 @@ dependencies = [
     "aiomysql>=0.2.0",
     "PyJWT>=2.8.0",
     "psycopg2>=2.9.11",
+    "alembic>=1.17.1",
     "alibabacloud-dingtalk>=2.2.36",
 ]
 
@@ -34,7 +35,6 @@ dependencies = [
 # ------------------------------------------------------------
 [dependency-groups]
 dev = [
-    "alembic>=1.17.1",
     "commitizen>=4.10.0",      # 统一提交规范(czg、cz)
     "mypy>=1.18.2",            # 类型检查工具
     "pre-commit>=4.4.0",       # Git Hook 管理
