@@ -2,14 +2,18 @@
 
 from .billing_quote_repository import BillingQuoteRepository
 from .billing_template_repository import BillingTemplateRepository
+from .carrier_repository import CarrierRepository
 from .company_repository import CompanyRepository
 from .customer_group_repository import CustomerGroupRepository
 from .customer_repository import CustomerRepository
+from .region_repository import RegionRepository
 
 __all__ = [
+    "CarrierRepository",
     "CompanyRepository",
     "CustomerRepository",
     "CustomerGroupRepository",
     "BillingTemplateRepository",
     "BillingQuoteRepository",
+    "RegionRepository",
 ]

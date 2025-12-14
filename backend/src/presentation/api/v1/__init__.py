@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from . import auth, billing_templates, customers
+from . import auth, billing_templates, carriers, customers, regions
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -13,5 +13,7 @@ v1_router.include_router(customers.group_router, tags=["CustomerGroups"])
 v1_router.include_router(customers.external_router, tags=["ExternalCompanies"])
 v1_router.include_router(billing_templates.router, tags=["BillingTemplates"])
 v1_router.include_router(billing_templates.quote_router, tags=["BillingQuotes"])
+v1_router.include_router(carriers.router, tags=["Carriers"])
+v1_router.include_router(regions.router, tags=["Regions"])
 
 # __all__ = ["router"]

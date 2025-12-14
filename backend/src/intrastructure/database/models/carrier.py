@@ -45,9 +45,7 @@ class Carrier(AuditMixin, Base):
     """Transport carrier definition."""
 
     __tablename__ = "carriers"
-    __table_args__ = (
-        UniqueConstraint("carrier_code", name="uq_carrier_code"),
-    )
+    __table_args__ = (UniqueConstraint("carrier_code", name="uq_carrier_code"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键")
     carrier_code: Mapped[str] = mapped_column(String(64), nullable=False, comment="服务商编码")
