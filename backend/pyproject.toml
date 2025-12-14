@@ -65,7 +65,8 @@ exclude = [
     ".venv",
     "alembic",
     "__pycache__",
-    "tests"
+    "tests",
+    "scripts",
 ]
 
 # 格式化配置

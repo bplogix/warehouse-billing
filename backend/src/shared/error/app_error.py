@@ -29,6 +29,7 @@ def handle_app_error(request: Request, exc: Exception) -> JSONResponse:
     response = ErrorResponse(code=ErrorCode.SYSTEM_ERROR, message=ErrorMessage.get_message(ErrorCode.SYSTEM_ERROR))
     return JSONResponse(status_code=HTTPStatus.OK, content=response.model_dump(by_alias=True))
 
+
 def handle_validation_error(_: Request, exc: Exception) -> JSONResponse:
     message = ""
 
