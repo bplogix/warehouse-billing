@@ -52,18 +52,21 @@ const navItems = [
     path: '/warehouse',
     icon: Building2,
     description: '入库/出库、作业日志',
+    disabled: true,
   },
   {
     label: '账目流水',
     path: '/ledger',
     icon: ReceiptText,
     description: '结算与对账',
+    disabled: true,
   },
   {
     label: '系统设置',
     path: '/settings',
     icon: Settings,
     description: '权限、基础设施',
+    disabled: true,
   },
 ]
 
@@ -162,10 +165,13 @@ const DesktopLayout = () => {
                   ? location.pathname === '/'
                   : location.pathname === item.path ||
                     location.pathname.startsWith(`${item.path}/`)
+              const isDisabled = item.disabled
               return (
                 <button
                   key={item.path}
+                  disabled={isDisabled}
                   onClick={() => {
+                    if (isDisabled) return
                     navigate(item.path)
                     setMobileOpen(false)
                   }}
@@ -174,6 +180,8 @@ const DesktopLayout = () => {
                     'hover:bg-accent hover:text-accent-foreground',
                     isActive &&
                       'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+                    isDisabled &&
+                      'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground',
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -318,15 +326,22 @@ const DesktopLayout = () => {
             <nav className="hidden items-center gap-2 lg:flex">
               {navItems.map((item) => {
                 const isActive = item.path === activePrimary.path
+                const isDisabled = item.disabled
                 return (
                   <button
                     key={item.path}
-                    onClick={() => navigate(item.path)}
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (isDisabled) return
+                      navigate(item.path)
+                    }}
                     className={cn(
                       'rounded-full px-3 py-1.5 text-xs font-medium transition',
                       'border border-transparent bg-transparent text-muted-foreground hover:border-border hover:bg-muted/60',
                       isActive &&
                         'border-primary/40 bg-primary/10 text-primary-foreground shadow-sm',
+                      isDisabled &&
+                        'cursor-not-allowed opacity-50 hover:border-transparent hover:bg-transparent',
                     )}
                   >
                     {item.label}

@@ -1,9 +1,10 @@
 import {
+  BadgePercent,
+  Car,
   CircleDollarSign,
   Home,
   Users2,
   Warehouse,
-  BadgePercent,
 } from 'lucide-react'
 
 export enum Theme {
@@ -28,6 +29,11 @@ export const menus = [
     path: '/billing',
     label: '计费管理',
     icon: BadgePercent,
+  },
+  {
+    path: '/carriers',
+    label: '承运商',
+    icon: Car,
   },
   {
     path: '/warehouse',
