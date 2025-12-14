@@ -6,11 +6,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class PostgresSettings(BaseSettings):
     """PostgreSQL 主库配置"""
 
-    HOST: str = "localhost"
+    HOST: str = ""
     PORT: int = 5432
-    USER: str = "postgres"
-    PASSWORD: str = "postgres"
-    DATABASE: str = "postgres"
+    USER: str = ""
+    PASSWORD: str = ""
+    DATABASE: str = ""
     POOL_SIZE: int = 20
     MAX_OVERFLOW: int = 20
 

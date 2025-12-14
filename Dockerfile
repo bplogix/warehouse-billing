@@ -86,6 +86,7 @@ COPY backend/src ./src
 COPY backend/alembic ./alembic
 COPY backend/entrypoint.sh ./
 COPY backend/alembic.ini ./
+COPY backend/.env.prod ./.env
 COPY backend/scripts ./scripts
 
 # Default to prod settings; override as needed
