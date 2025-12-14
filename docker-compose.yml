@@ -99,8 +99,6 @@ services:
     # profiles:
     #   - redis  # 使用 --profile redis 来启动Redis
 
-    # MinIO对象存储服务
-
 
 networks:
   bplogix-network:
