@@ -15,7 +15,7 @@ import {
   requestTokenRefresh,
 } from './http/refresh'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000' // 改成你的 API 地址
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/' // 改成你的 API 地址
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
