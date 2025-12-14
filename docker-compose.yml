@@ -1,0 +1,148 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: cw-frontend
+    ports:
+      - "443:443"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=/api
+    volumes:
+      - logs_volume:/var/log/nginx
+    networks:
+      - bplogix-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/" ]
+      # interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: cw-backend
+    command: [ "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - APP_ENV=prod
+      - DB_HOST=${DB_HOST}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ECHO=False
+      - REDIS_HOST=${REDIS_HOST}
+    volumes:
+      - logs_volume:/app/backend/logs
+      - tmps_volume:/app/backend/tmps
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - bplogix-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      # interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16.4
+    container_name: cw-postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bplogix-network
+
+  # Redis缓存服务（可选）
+  redis:
+    image: redis:7-alpine
+    container_name: cw-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: [ "redis-server" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bplogix-network
+    # profiles:
+    #   - redis  # 使用 --profile redis 来启动Redis
+
+    # MinIO对象存储服务
+  minio:
+    image: minio/minio:latest
+    container_name: cw-minio
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-bplogix5963}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      # interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bplogix-network
+    # profiles:
+    #   - minio  # 使用 --profile minio 来启动miniO
+
+networks:
+  bplogix-network:
+    driver: bridge
+
+volumes:
+  # 数据库持久化存储
+  postgres_data:
+    driver: local
+  # Redis数据持久化
+  redis_data:
+    driver: local
+  # 应用数据卷
+  logs_volume:
+    driver: local
+  # 暂存文件
+  tmps_volume:
+    driver: local
+  # MinIO数据持久化
+  minio_data:
+    driver: local
