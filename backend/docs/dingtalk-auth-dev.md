@@ -74,10 +74,10 @@ sequenceDiagram
 
 ## 开发环境策略（无钉钉接入）
 
-- **配置切换**：在 `.env` 中新增 `DINGTALK_AUTH_MODE=real|mock`（默认 `real`）。`Settings` 根据该字段注册 `RealDingTalkAuthGateway` 或 `MockDingTalkAuthGateway`。
+- **配置切换**：在 `.env` 中使用布尔值 `DINGTALK_AUTH_MOCK=true|false`（默认 `false`）。`Settings` 根据该开关注册 `RealDingTalkAuthGateway` 或 `MockDingTalkAuthGateway`。
 - **Mock Gateway**：mock 实现读取 `MOCK_DING_USER_ID`、`MOCK_DOMAIN_CODES` 等变量生成固定 payload，可允许通过查询参数覆盖；调用时记录 `warning` 并在响应头加 `X-Auth-Mock: true`。
-- **Dev-only 登录端点**：在 `settings.ENV == "dev"` 且 `DINGTALK_AUTH_MODE=mock` 时启用 `POST /auth/dev-login`，直接生成 JWT 供前端调试；生产环境自动不注册该路由。
-- **安全边界**：CI/CD 校验生产环境 `DINGTALK_AUTH_MODE必须为 real`，避免误用 mock；日志中脱敏 `unionId`。
+- **Dev-only 登录端点**：在 `settings.ENV == "dev"` 且 `DINGTALK_AUTH_MOCK=true` 时启用 `POST /auth/dev-login`，直接生成 JWT 供前端调试；生产环境自动不注册该路由。
+- **安全边界**：CI/CD 校验生产环境 `DINGTALK_AUTH_MOCK` 必须为 `false`，避免误用 mock；日志中脱敏 `unionId`。
 - **测试对齐**：单元/集成测试默认注入 mock gateway 验证用例流程，E2E 或灰度环境开启 `real` 模式走完整 OAuth。
 
 ## 测试建议

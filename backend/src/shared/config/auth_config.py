@@ -12,7 +12,7 @@ class DingTalkAuthSettings(BaseSettings):
     APP_KEY: str = ""
     APP_SECRET: str = ""
     BASE_URL: Annotated[AnyHttpUrl | str, Field(default="https://oapi.dingtalk.com")] = "https://oapi.dingtalk.com"
-    AUTH_MODE: str = "mock"  # real | mock
+    AUTH_MOCK: bool = False
     ROLE_DOMAIN_MAPPING: dict[str, list[str]] = {
         "ROLE_STD_AGENT": ["GENERAL_WAREHOUSING"]
     }
