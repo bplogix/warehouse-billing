@@ -139,6 +139,7 @@ const DesktopLayout = () => {
     }) ?? navItems[0]
 
   const secondaryNavItems = subNavConfig[activePrimary.path] ?? []
+  const hasSecondaryNav = secondaryNavItems.length > 0
 
   const drawer = (
     <div className="flex h-full flex-col">
@@ -232,25 +233,25 @@ const DesktopLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-muted/20 text-foreground">
-      <aside
-        className="sticky top-0 hidden h-screen w-[280px] border-r bg-card/70 shadow-lg shadow-black/5 backdrop-blur lg:block"
-        aria-label="sidebar navigation"
-      >
-        <div className="flex h-full flex-col">
-          <div className="space-y-1 border-b border-border/70 px-5 py-6">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              当前模块
-            </p>
-            <p className="text-lg font-semibold">{activePrimary.label}</p>
-            {activePrimary.description && (
-              <p className="text-xs text-muted-foreground">
-                {activePrimary.description}
+      {hasSecondaryNav && (
+        <aside
+          className="sticky top-0 hidden h-screen w-[280px] border-r bg-card/70 shadow-lg shadow-black/5 backdrop-blur lg:block"
+          aria-label="sidebar navigation"
+        >
+          <div className="flex h-full flex-col">
+            <div className="space-y-1 border-b border-border/70 px-5 py-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                当前模块
               </p>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col gap-2 p-4">
-            {secondaryNavItems.length > 0 ? (
-              secondaryNavItems.map((item) => {
+              <p className="text-lg font-semibold">{activePrimary.label}</p>
+              {activePrimary.description && (
+                <p className="text-xs text-muted-foreground">
+                  {activePrimary.description}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-4">
+              {secondaryNavItems.map((item) => {
                 const itemPathname = item.path.split('?')[0]
                 const isActive = location.pathname === itemPathname
                 return (
@@ -271,18 +272,14 @@ const DesktopLayout = () => {
                     )}
                   </button>
                 )
-              })
-            ) : (
-              <div className="rounded-xl border border-dashed border-border/80 p-4 text-sm text-muted-foreground">
-                当前模块暂无二级菜单
-              </div>
-            )}
+              })}
+            </div>
+            <div className="border-t px-4 py-4 text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Warehouse Billing
+            </div>
           </div>
-          <div className="border-t px-4 py-4 text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Warehouse Billing
-          </div>
-        </div>
-      </aside>
+        </aside>
+      )}
 
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-border/70 bg-card/80 shadow-sm shadow-black/5 backdrop-blur">
