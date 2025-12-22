@@ -42,7 +42,7 @@ const navItems = [
     description: '模板与规则管理',
   },
   {
-    label: '承运商管理',
+    label: '承运商',
     path: '/carriers',
     icon: Car,
     description: '承运商档案与服务配置',
@@ -110,9 +110,9 @@ const subNavConfig: Record<
   ],
   '/carriers': [
     {
-      label: '承运商控制台',
+      label: '承运商服务',
       description: '在同一页面维护承运商与服务',
-      path: '/carriers',
+      path: '/carriers/carrier',
     },
   ],
 }

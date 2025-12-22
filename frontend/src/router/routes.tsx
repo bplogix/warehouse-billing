@@ -18,6 +18,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import Desktop from '@/components/layouts/Desktop'
 import DevLogin from '@/modules/auth/Dev'
 import DingTalkQrLogin from '@/modules/auth/DingTalkQrLogin'
+import CarrierPage from '@/modules/carrier/CarrierPage'
 import DemoPage from '@/modules/demo/Default'
 
 export const routeConfig: RouteObject[] = [
@@ -67,7 +68,10 @@ export const routeConfig: RouteObject[] = [
       },
       {
         path: 'carriers',
-        element: <CarrierDashboard />,
+        children: [
+          { index: true, element: <CarrierDashboard /> },
+          { path: 'carrier', element: <CarrierPage /> },
+        ],
       },
       {
         path: 'warehouse',

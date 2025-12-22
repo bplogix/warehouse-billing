@@ -15,6 +15,7 @@ type Props = {
   selectedId: number | null
   onSelect: (id: number) => void
   onRefresh: () => void
+  onCreateClick: () => void
 }
 
 const statusText: Record<Carrier['status'], string> = {
@@ -29,6 +30,7 @@ const CarrierList = ({
   selectedId,
   onSelect,
   onRefresh,
+  onCreateClick,
 }: Props) => {
   const [keyword, setKeyword] = useState('')
 
@@ -52,14 +54,19 @@ const CarrierList = ({
             共 {total} 家，点击查看详情与服务
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          刷新
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={onCreateClick}>
+            新增承运商
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            刷新
+          </Button>
+        </div>
       </div>
       <Input
         placeholder="搜索名称 / 编码 / 国家"
