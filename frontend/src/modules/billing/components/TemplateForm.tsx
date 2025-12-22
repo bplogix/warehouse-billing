@@ -294,6 +294,14 @@ const TemplateForm = ({
     setActiveTab(current)
   }, [fields, activeRuleIndex])
 
+  const currentTabValue =
+    fields.length === 0
+      ? ''
+      : activeTab ??
+        fields[activeRuleIndex]?.chargeCode ??
+        fields[0]?.chargeCode ??
+        ''
+
   const onSubmit = async (values: TemplateFormValues) => {
     const payload: Omit<Template, 'id'> = {
       templateType,
@@ -801,7 +809,7 @@ const TemplateForm = ({
 
           {fields.length > 0 && (
             <Tabs
-              value={activeTab}
+              value={currentTabValue}
               onValueChange={(val) => {
                 const idx = fields.findIndex((f) => f.chargeCode === val)
                 setActiveRuleIndex(idx >= 0 ? idx : 0)
