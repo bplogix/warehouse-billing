@@ -97,8 +97,10 @@ class CreateBillingTemplateUseCase:
             )
 
         logger.info("billing template created", template_code=orm_template.template_code, template_id=orm_template.id)
-        await self._session.refresh(orm_template)
-        return orm_template
+        template = await self._template_repo.get_by_id(orm_template.id, with_rules=True)
+        if template is None:
+            raise BillingDomainError("created template disappeared")
+        return template
 
 
 class UpdateBillingTemplateUseCase:
@@ -148,8 +150,10 @@ class UpdateBillingTemplateUseCase:
             "billing template updated",
             template_id=template.id,
         )
-        await self._session.refresh(template)
-        return template
+        refreshed = await self._template_repo.get_by_id(template.id, with_rules=True)
+        if refreshed is None:
+            raise BillingDomainError("updated template disappeared")
+        return refreshed
 
 
 class QueryBillingTemplatesUseCase:
