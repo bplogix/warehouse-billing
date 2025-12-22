@@ -505,7 +505,7 @@ const TemplateForm = ({
                 name={`rules.${index}.tiers`}
                 render={() => (
                   <FormItem>
-                    <FormLabel>阶梯定价</FormLabel>
+                    <FormLabel htmlFor={null}>阶梯定价</FormLabel>
                     <Controller
                       control={form.control as unknown as Control}
                       name={`rules.${index}.tiers`}

@@ -272,11 +272,11 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>客户编码</FormLabel>
-                <FormControl>
-                  <div className="flex overflow-hidden rounded-md border border-input">
-                    <span className="inline-flex items-center bg-muted px-3 text-sm text-muted-foreground">
-                      {CUSTOMER_CODE_PREFIX}
-                    </span>
+                <div className="flex overflow-hidden rounded-md border border-input">
+                  <span className="inline-flex items-center bg-muted px-3 text-sm text-muted-foreground">
+                    {CUSTOMER_CODE_PREFIX}
+                  </span>
+                  <FormControl>
                     <Input
                       {...field}
                       value={stripCustomerPrefix(field.value ?? '')}
@@ -287,8 +287,8 @@ const CustomerForm = ({ onCreated, enableRBLink = false }: Props) => {
                       inputMode="numeric"
                       pattern="[0-9]*"
                     />
-                  </div>
-                </FormControl>
+                  </FormControl>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
