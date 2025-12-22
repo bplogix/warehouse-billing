@@ -18,6 +18,7 @@ import Desktop from '@/components/layouts/Desktop'
 import DevLogin from '@/modules/auth/Dev'
 import DingTalkQrLogin from '@/modules/auth/DingTalkQrLogin'
 import CarrierPage from '@/modules/carrier/CarrierPage'
+import GeoPage from '@/modules/carrier/GeoPage'
 import DemoPage from '@/modules/demo/Default'
 
 export const routeConfig: RouteObject[] = [
@@ -70,6 +71,7 @@ export const routeConfig: RouteObject[] = [
         children: [
           { index: true, element: <CarrierPage /> },
           { path: 'carrier', element: <CarrierPage /> },
+          { path: 'geo', element: <GeoPage /> },
         ],
       },
       {

@@ -114,6 +114,11 @@ const subNavConfig: Record<
       description: '在同一页面维护承运商与服务',
       path: '/carriers/carrier',
     },
+    {
+      label: '地理区域',
+      description: '配置承运商服务的覆盖区域',
+      path: '/carriers/geo',
+    },
   ],
 }
 

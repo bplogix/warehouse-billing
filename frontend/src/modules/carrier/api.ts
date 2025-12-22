@@ -11,6 +11,11 @@ import type {
   CarrierServiceQuery,
   CarrierServiceUpdatePayload,
   CarrierUpdatePayload,
+  GeoGroup,
+  GeoGroupCreatePayload,
+  GeoGroupRegionUpdatePayload,
+  RegionListResponse,
+  RegionQuery,
 } from './types'
 
 export const fetchCarriers = (query?: CarrierQuery) =>
@@ -47,5 +52,29 @@ export const updateCarrierService = (
 ) =>
   apiPut<CarrierService>(
     `/v1/carriers/${carrierId}/services/${serviceId}`,
+    payload,
+  )
+
+export const fetchRegions = (query?: RegionQuery) =>
+  apiGet<RegionListResponse>('/v1/regions', { params: query })
+
+export const createGeoGroup = (
+  carrierId: number,
+  serviceId: number,
+  payload: GeoGroupCreatePayload,
+) =>
+  apiPost<GeoGroup>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups`,
+    payload,
+  )
+
+export const assignGeoGroupRegions = (
+  carrierId: number,
+  serviceId: number,
+  groupId: number,
+  payload: GeoGroupRegionUpdatePayload,
+) =>
+  apiPut<GeoGroup>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups/${groupId}/regions`,
     payload,
   )

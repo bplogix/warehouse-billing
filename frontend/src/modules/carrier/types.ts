@@ -97,3 +97,64 @@ export type CarrierServiceUpdatePayload = {
   expireDate?: string | null
   attributes?: Record<string, unknown> | null
 }
+
+export type CarrierServiceGeoGroupStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'SCHEDULED'
+
+export type GeoGroupRegion = {
+  id: number
+  regionCode: string
+  regionLevel?: string | null
+  priority?: number | null
+}
+
+export type GeoGroup = {
+  id: number
+  carrierServiceId: number
+  groupCode: string
+  groupName: string
+  status: CarrierServiceGeoGroupStatus
+  description?: string | null
+  effectiveDate?: string | null
+  expireDate?: string | null
+  regions?: GeoGroupRegion[]
+}
+
+export type GeoGroupCreatePayload = {
+  groupCode: string
+  groupName: string
+  status?: CarrierServiceGeoGroupStatus
+  description?: string | null
+  effectiveDate?: string | null
+  expireDate?: string | null
+  attributes?: Record<string, unknown> | null
+}
+
+export type GeoGroupRegionUpdatePayload = {
+  regionCodes: string[]
+}
+
+export type Region = {
+  id: number
+  regionCode: string
+  name: string
+  countryCode: string
+  level: string
+  parentCode?: string | null
+}
+
+export type RegionListResponse = {
+  total: number
+  items: Region[]
+}
+
+export type RegionQuery = {
+  countryCode?: string
+  level?: string
+  parentCode?: string | null
+  keyword?: string | null
+  limit?: number
+  offset?: number
+}
