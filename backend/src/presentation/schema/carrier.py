@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import Field
+from sqlalchemy import inspect
 
 from src.intrastructure.database.models import (
     Carrier,
@@ -180,7 +181,11 @@ class GeoGroupSchema(CamelModel):
 
     @classmethod
     def from_model(cls, model: CarrierServiceGeoGroup) -> GeoGroupSchema:
-        regions = [GeoGroupRegionSchema.from_model(region) for region in model.regions]
+        state = inspect(model)
+        if "regions" in state.unloaded:
+            regions: list[GeoGroupRegionSchema] = []
+        else:
+            regions = [GeoGroupRegionSchema.from_model(region) for region in model.regions]
         return cls(
             id=model.id,
             carrierServiceId=model.carrier_service_id,
