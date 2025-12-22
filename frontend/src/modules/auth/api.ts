@@ -8,7 +8,7 @@ import type {
 
 export const createDingTalkQr = async () => {
   const { data } = await http.post<DingTalkQrCreateResponse>(
-    '/api/v1/auth/dingtalk/qr',
+    '/v1/auth/dingtalk/qr',
     { clientType: 'pc' },
   )
 
@@ -17,7 +17,7 @@ export const createDingTalkQr = async () => {
 
 export const fetchDingTalkQrStatus = async (authState: string) => {
   const { data } = await http.get<DingTalkQrStatusResponse>(
-    `/api/v1/auth/dingtalk/qr/${authState}/status`,
+    `/v1/auth/dingtalk/qr/${authState}/status`,
   )
 
   return data
@@ -25,7 +25,7 @@ export const fetchDingTalkQrStatus = async (authState: string) => {
 
 export const loginWithDingTalkAuthCode = async (authCode: string) => {
   const { data } = await http.post<DingTalkLoginResponse>(
-    '/api/v1/auth/dingtalk/login',
+    '/v1/auth/dingtalk/login',
     { authCode },
   )
 

@@ -9,20 +9,20 @@ import type {
 } from './schemas/template'
 
 export const fetchBillingTemplates = (query: TemplateListQuery) =>
-  apiGet<TemplateListResponse>('/api/v1/billing/templates', {
+  apiGet<TemplateListResponse>('/v1/billing/templates', {
     params: query,
   })
 
 export const fetchBillingTemplateDetail = (templateId: number) =>
-  apiGet<Template>(`/api/v1/billing/templates/${templateId}`)
+  apiGet<Template>(`/v1/billing/templates/${templateId}`)
 
 export const createBillingTemplate = (payload: TemplateCreatePayload) =>
-  apiPost<Template>('/api/v1/billing/templates', payload)
+  apiPost<Template>('/v1/billing/templates', payload)
 
 export const updateBillingTemplate = (
   templateId: number,
   payload: TemplateUpdatePayload,
-) => apiPut<Template>(`/api/v1/billing/templates/${templateId}`, payload)
+) => apiPut<Template>(`/v1/billing/templates/${templateId}`, payload)
 
 export const deleteBillingTemplate = (templateId: number) =>
-  apiDelete<void>(`/api/v1/billing/templates/${templateId}`)
+  apiDelete<void>(`/v1/billing/templates/${templateId}`)

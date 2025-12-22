@@ -4,8 +4,8 @@ import { ApiError } from '@/constants/error'
 import { useAuthStore } from '@/stores/useAuth'
 import type { ApiResponse } from '@/types/common'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const TOKEN_REFRESH_ENDPOINT = '/api/v1/auth/refresh'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || 'http://localhost:8000'
+const TOKEN_REFRESH_ENDPOINT = '/v1/auth/refresh'
 const TOKEN_REFRESH_THRESHOLD_MS = 60 * 1000
 
 interface TokenPairPayload {

@@ -15,7 +15,7 @@ import {
   requestTokenRefresh,
 } from './http/refresh'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/' // 改成你的 API 地址
+const API_BASE_URL = import.meta.env.VITE_API_BASE_PATH || '/api' // default to proxied path in dev
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
