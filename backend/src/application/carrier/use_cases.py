@@ -55,6 +55,13 @@ class QueryCarrierServicesResult:
     items: list[CarrierService]
 
 
+@dataclass(slots=True)
+class CarrierServiceTariffGroupResult:
+    geo_group_id: int
+    currency: str
+    rows: list[CarrierServiceTariff]
+
+
 class CreateCarrierUseCase:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -334,6 +341,24 @@ class GetGeoGroupDetailUseCase:
         return group
 
 
+class GetCarrierServiceTariffsUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._repo = CarrierRepository(session)
+
+    async def execute(self, carrier_id: int, service_id: int, geo_group_id: int) -> CarrierServiceTariffGroupResult:
+        service = await self._repo.get_service_by_id(service_id)
+        if service is None or service.carrier_id != carrier_id:
+            raise CarrierServiceNotFoundError("carrier service not found")
+        group = await self._repo.get_geo_group_by_id(geo_group_id)
+        if group is None or group.carrier_service_id != service_id:
+            raise CarrierServiceGeoGroupNotFoundError("geo group not found")
+
+        tariffs = await self._repo.list_tariffs(service_id, geo_group_id)
+        currency = tariffs[0].currency if tariffs else "JPY"
+        return CarrierServiceTariffGroupResult(geo_group_id=geo_group_id, currency=currency, rows=tariffs)
+
+
 class SetCarrierServiceTariffsUseCase:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -361,7 +386,7 @@ class SetCarrierServiceTariffsUseCase:
             tariffs = [
                 CarrierServiceTariff(
                     carrier_service_id=cmd.service_id,
-                    region_code=region_code,
+                    geo_group_id=cmd.geo_group_id,
                     weight_max_kg=row.weight_max_kg,
                     volume_max_cm3=row.volume_max_cm3,
                     girth_max_cm=row.girth_max_cm,
@@ -369,10 +394,9 @@ class SetCarrierServiceTariffsUseCase:
                     price_amount=row.price_amount,
                     created_by=operator,
                 )
-                for region_code in region_codes
                 for row in cmd.rows
             ]
-            await self._repo.replace_tariffs(cmd.service_id, region_codes, tariffs)
+            await self._repo.replace_tariffs(cmd.service_id, cmd.geo_group_id, tariffs)
 
             regions = await self._repo.fetch_regions_by_codes(region_codes)
             region_name_map = {region.region_code: region.name for region in regions}

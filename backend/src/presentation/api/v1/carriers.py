@@ -31,6 +31,7 @@ from src.application.carrier.use_cases import (
     CreateGeoGroupUseCase,
     GetCarrierDetailUseCase,
     GetCarrierServiceDetailUseCase,
+    GetCarrierServiceTariffsUseCase,
     GetGeoGroupDetailUseCase,
     ListGeoGroupsUseCase,
     QueryCarrierServicesUseCase,
@@ -46,6 +47,7 @@ from src.presentation.dependencies.carrier import (
     get_assign_geo_group_regions_use_case,
     get_carrier_detail_use_case,
     get_carrier_service_detail_use_case,
+    get_carrier_service_tariffs_use_case,
     get_create_carrier_service_use_case,
     get_create_carrier_use_case,
     get_create_geo_group_use_case,
@@ -65,6 +67,8 @@ from src.presentation.schema.carrier import (
     CarrierServiceCreateSchema,
     CarrierServiceListResponse,
     CarrierServiceSchema,
+    CarrierServiceTariffGroupSchema,
+    CarrierServiceTariffRowSchema,
     CarrierServiceTariffSnapshotSchema,
     CarrierServiceTariffUpsertSchema,
     CarrierServiceUpdateSchema,
@@ -245,6 +249,40 @@ async def upsert_carrier_service_tariffs(
     except RegionNotFoundError as exc:
         raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
     return SuccessResponse(data=CarrierServiceTariffSnapshotSchema.from_model(snapshot))
+
+
+@router.get(
+    "/{carrier_id}/services/{service_id}/geo-groups/{group_id}/tariffs",
+    response_model=SuccessResponse[CarrierServiceTariffGroupSchema],
+)
+async def get_carrier_service_tariffs(
+    carrier_id: int,
+    service_id: int,
+    group_id: int,
+    use_case: GetCarrierServiceTariffsUseCase = Depends(get_carrier_service_tariffs_use_case),
+) -> SuccessResponse[CarrierServiceTariffGroupSchema]:
+    try:
+        result = await use_case.execute(carrier_id=carrier_id, service_id=service_id, geo_group_id=group_id)
+    except CarrierServiceNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
+    except CarrierServiceGeoGroupNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
+    rows = [
+        CarrierServiceTariffRowSchema(
+            weightMaxKg=row.weight_max_kg,
+            volumeMaxCm3=row.volume_max_cm3,
+            girthMaxCm=row.girth_max_cm,
+            priceAmount=row.price_amount,
+        )
+        for row in result.rows
+    ]
+    return SuccessResponse(
+        data=CarrierServiceTariffGroupSchema(
+            geoGroupId=result.geo_group_id,
+            currency=result.currency,
+            rows=rows,
+        )
+    )
 
 
 @router.get(

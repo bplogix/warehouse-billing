@@ -193,6 +193,12 @@ class CarrierServiceTariffUpsertSchema(CamelModel):
     rows: list[CarrierServiceTariffRowSchema]
 
 
+class CarrierServiceTariffGroupSchema(CamelModel):
+    geo_group_id: int = Field(alias="geoGroupId")
+    currency: str
+    rows: list[CarrierServiceTariffRowSchema]
+
+
 class CarrierServiceTariffSnapshotSchema(CamelModel):
     id: int
     carrier_id: int = Field(alias="carrierId")

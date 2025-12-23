@@ -198,19 +198,35 @@ class CarrierRepository:
     async def replace_tariffs(
         self,
         service_id: int,
-        region_codes: list[str],
+        geo_group_id: int,
         tariffs: Iterable[CarrierServiceTariff],
     ) -> list[CarrierServiceTariff]:
-        if region_codes:
-            await self._session.execute(
-                delete(CarrierServiceTariff).where(
-                    CarrierServiceTariff.carrier_service_id == service_id,
-                    CarrierServiceTariff.region_code.in_(region_codes),
-                )
+        await self._session.execute(
+            delete(CarrierServiceTariff).where(
+                CarrierServiceTariff.carrier_service_id == service_id,
+                CarrierServiceTariff.geo_group_id == geo_group_id,
             )
+        )
         self._session.add_all(list(tariffs))
         await self._session.flush()
         return list(tariffs)
+
+    async def list_tariffs(self, service_id: int, geo_group_id: int) -> list[CarrierServiceTariff]:
+        stmt = (
+            select(CarrierServiceTariff)
+            .where(
+                CarrierServiceTariff.carrier_service_id == service_id,
+                CarrierServiceTariff.geo_group_id == geo_group_id,
+                CarrierServiceTariff.is_deleted.is_(False),
+            )
+            .order_by(
+                CarrierServiceTariff.girth_max_cm.asc(),
+                CarrierServiceTariff.weight_max_kg.asc(),
+                CarrierServiceTariff.volume_max_cm3.asc(),
+            )
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
 
     async def get_latest_tariff_snapshot_version(self, carrier_id: int, service_id: int) -> int:
         stmt = select(func.max(CarrierServiceTariffSnapshot.version)).where(

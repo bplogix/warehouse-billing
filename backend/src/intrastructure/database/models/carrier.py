@@ -198,13 +198,13 @@ class CarrierServiceTariff(AuditMixin, Base):
     __table_args__ = (
         UniqueConstraint(
             "carrier_service_id",
-            "region_code",
+            "geo_group_id",
             "weight_max_kg",
             "volume_max_cm3",
             "girth_max_cm",
             name="uq_carrier_tariff_dimension",
         ),
-        Index("idx_carrier_tariff_region", "region_code"),
+        Index("idx_carrier_tariff_geo_group", "geo_group_id"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键")
@@ -214,11 +214,11 @@ class CarrierServiceTariff(AuditMixin, Base):
         nullable=False,
         comment="关联承运商服务",
     )
-    region_code: Mapped[str] = mapped_column(
-        String(64),
-        ForeignKey("regions.region_code"),
+    geo_group_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("carrier_service_geo_groups.id", ondelete="CASCADE"),
         nullable=False,
-        comment="目的地区域编码",
+        comment="关联覆盖分组ID",
     )
     weight_max_kg: Mapped[float | None] = mapped_column(comment="重量上限(kg)")
     volume_max_cm3: Mapped[int | None] = mapped_column(comment="体积上限(cm^3)")
@@ -229,7 +229,7 @@ class CarrierServiceTariff(AuditMixin, Base):
     price_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="价格(最小货币单位)")
 
     carrier_service: Mapped[CarrierService] = relationship()
-    region: Mapped[Region] = relationship()
+    geo_group: Mapped[CarrierServiceGeoGroup] = relationship()
 
 
 class CarrierServiceTariffSnapshot(AuditMixin, Base):
