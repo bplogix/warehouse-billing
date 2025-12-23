@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CarrierServiceTariffSnapshotPayload",
+  "type": "object",
+  "required": ["currency", "geo_axis", "metric_axis", "matrix"],
+  "properties": {
+    "currency": { "type": "string" },
+    "geo_axis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "name"],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metric_axis": {
+      "type": "object",
+      "properties": {
+        "girth_max_cm": { "type": "array", "items": { "type": "integer" } },
+        "weight_max_kg": { "type": "array", "items": { "type": "number" } },
+        "volume_max_cm3": { "type": "array", "items": { "type": "integer" } }
+      },
+      "additionalProperties": false
+    },
+    "matrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["region_code", "rows"],
+        "properties": {
+          "region_code": { "type": "string" },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["price_amount"],
+              "properties": {
+                "girth_max_cm": { "type": ["integer", "null"] },
+                "weight_max_kg": { "type": ["number", "null"] },
+                "volume_max_cm3": { "type": ["integer", "null"] },
+                "price_amount": { "type": "integer" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generated_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": false
+}
