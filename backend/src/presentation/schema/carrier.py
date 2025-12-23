@@ -199,6 +199,10 @@ class CarrierServiceTariffGroupSchema(CamelModel):
     rows: list[CarrierServiceTariffRowSchema]
 
 
+class CarrierServiceTariffGroupListResponse(CamelModel):
+    items: list[CarrierServiceTariffGroupSchema]
+
+
 class CarrierServiceTariffSnapshotSchema(CamelModel):
     id: int
     carrier_id: int = Field(alias="carrierId")

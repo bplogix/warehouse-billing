@@ -34,6 +34,7 @@ from src.application.carrier.use_cases import (
     GetCarrierServiceTariffsUseCase,
     GetGeoGroupDetailUseCase,
     ListGeoGroupsUseCase,
+    ListCarrierServiceTariffsUseCase,
     QueryCarrierServicesUseCase,
     QueryCarriersUseCase,
     SetCarrierServiceTariffsUseCase,
@@ -53,6 +54,7 @@ from src.presentation.dependencies.carrier import (
     get_create_geo_group_use_case,
     get_geo_group_detail_use_case,
     get_list_geo_groups_use_case,
+    get_list_carrier_service_tariffs_use_case,
     get_query_carrier_services_use_case,
     get_query_carriers_use_case,
     get_set_carrier_service_tariffs_use_case,
@@ -68,6 +70,7 @@ from src.presentation.schema.carrier import (
     CarrierServiceListResponse,
     CarrierServiceSchema,
     CarrierServiceTariffGroupSchema,
+    CarrierServiceTariffGroupListResponse,
     CarrierServiceTariffRowSchema,
     CarrierServiceTariffSnapshotSchema,
     CarrierServiceTariffUpsertSchema,
@@ -249,6 +252,39 @@ async def upsert_carrier_service_tariffs(
     except RegionNotFoundError as exc:
         raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
     return SuccessResponse(data=CarrierServiceTariffSnapshotSchema.from_model(snapshot))
+
+
+@router.get(
+    "/{carrier_id}/services/{service_id}/tariffs",
+    response_model=SuccessResponse[CarrierServiceTariffGroupListResponse],
+)
+async def list_carrier_service_tariffs(
+    carrier_id: int,
+    service_id: int,
+    use_case: ListCarrierServiceTariffsUseCase = Depends(get_list_carrier_service_tariffs_use_case),
+) -> SuccessResponse[CarrierServiceTariffGroupListResponse]:
+    try:
+        result = await use_case.execute(carrier_id=carrier_id, service_id=service_id)
+    except CarrierServiceNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
+
+    items = [
+        CarrierServiceTariffGroupSchema(
+            geoGroupId=item.geo_group_id,
+            currency=item.currency,
+            rows=[
+                CarrierServiceTariffRowSchema(
+                    weightMaxKg=row.weight_max_kg,
+                    volumeMaxCm3=row.volume_max_cm3,
+                    girthMaxCm=row.girth_max_cm,
+                    priceAmount=row.price_amount,
+                )
+                for row in item.rows
+            ],
+        )
+        for item in result.items
+    ]
+    return SuccessResponse(data=CarrierServiceTariffGroupListResponse(items=items))
 
 
 @router.get(

@@ -62,6 +62,11 @@ class CarrierServiceTariffGroupResult:
     rows: list[CarrierServiceTariff]
 
 
+@dataclass(slots=True)
+class CarrierServiceTariffGroupListResult:
+    items: list[CarrierServiceTariffGroupResult]
+
+
 class CreateCarrierUseCase:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -357,6 +362,37 @@ class GetCarrierServiceTariffsUseCase:
         tariffs = await self._repo.list_tariffs(service_id, geo_group_id)
         currency = tariffs[0].currency if tariffs else "JPY"
         return CarrierServiceTariffGroupResult(geo_group_id=geo_group_id, currency=currency, rows=tariffs)
+
+
+class ListCarrierServiceTariffsUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._repo = CarrierRepository(session)
+
+    async def execute(self, carrier_id: int, service_id: int) -> CarrierServiceTariffGroupListResult:
+        service = await self._repo.get_service_by_id(service_id)
+        if service is None or service.carrier_id != carrier_id:
+            raise CarrierServiceNotFoundError("carrier service not found")
+
+        tariffs = await self._repo.list_tariffs_by_service(service_id)
+        if not tariffs:
+            return CarrierServiceTariffGroupListResult(items=[])
+
+        group_map: dict[int, CarrierServiceTariffGroupResult] = {}
+        for tariff in tariffs:
+            group = group_map.get(tariff.geo_group_id)
+            if group is None:
+                group = CarrierServiceTariffGroupResult(
+                    geo_group_id=tariff.geo_group_id,
+                    currency=tariff.currency,
+                    rows=[],
+                )
+                group_map[tariff.geo_group_id] = group
+            group.rows.append(tariff)
+
+        items = list(group_map.values())
+        items.sort(key=lambda item: item.geo_group_id)
+        return CarrierServiceTariffGroupListResult(items=items)
 
 
 class SetCarrierServiceTariffsUseCase:

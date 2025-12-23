@@ -228,6 +228,23 @@ class CarrierRepository:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
+    async def list_tariffs_by_service(self, service_id: int) -> list[CarrierServiceTariff]:
+        stmt = (
+            select(CarrierServiceTariff)
+            .where(
+                CarrierServiceTariff.carrier_service_id == service_id,
+                CarrierServiceTariff.is_deleted.is_(False),
+            )
+            .order_by(
+                CarrierServiceTariff.geo_group_id.asc(),
+                CarrierServiceTariff.weight_max_kg.asc(),
+                CarrierServiceTariff.volume_max_cm3.asc(),
+                CarrierServiceTariff.girth_max_cm.asc(),
+            )
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
     async def get_latest_tariff_snapshot_version(self, carrier_id: int, service_id: int) -> int:
         stmt = select(func.max(CarrierServiceTariffSnapshot.version)).where(
             CarrierServiceTariffSnapshot.carrier_id == carrier_id,
