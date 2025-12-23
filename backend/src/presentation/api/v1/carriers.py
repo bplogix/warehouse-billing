@@ -266,8 +266,6 @@ async def create_geo_group(
         group_name=payload.group_name,
         status=payload.status,
         description=payload.description,
-        effective_date=payload.effective_date,
-        expire_date=payload.expire_date,
         attributes=payload.attributes,
     )
     try:
@@ -298,8 +296,6 @@ async def update_geo_group(
         group_name=payload.group_name,
         status=payload.status,
         description=payload.description,
-        effective_date=payload.effective_date,
-        expire_date=payload.expire_date,
         attributes=payload.attributes,
     )
     try:

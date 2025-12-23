@@ -133,8 +133,6 @@ class GeoGroupCreateSchema(CamelModel):
     group_name: str = Field(alias="groupName")
     status: CarrierServiceGeoGroupStatus = CarrierServiceGeoGroupStatus.SCHEDULED
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
     attributes: dict[str, Any] | None = None
 
 
@@ -142,8 +140,6 @@ class GeoGroupUpdateSchema(CamelModel):
     group_name: str = Field(alias="groupName")
     status: CarrierServiceGeoGroupStatus
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
     attributes: dict[str, Any] | None = None
 
 
@@ -175,8 +171,6 @@ class GeoGroupSchema(CamelModel):
     group_name: str = Field(alias="groupName")
     status: CarrierServiceGeoGroupStatus
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
     regions: list[GeoGroupRegionSchema] = Field(default_factory=list)
 
     @classmethod
@@ -193,8 +187,6 @@ class GeoGroupSchema(CamelModel):
             groupName=model.group_name,
             status=CarrierServiceGeoGroupStatus(model.status),
             description=model.description,
-            effectiveDate=model.effective_date,
-            expireDate=model.expire_date,
             regions=regions,
         )
 

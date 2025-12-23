@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -178,8 +178,10 @@ class CarrierRepository:
         group: CarrierServiceGeoGroup,
         regions: Iterable[CarrierServiceGeoGroupRegion],
     ) -> CarrierServiceGeoGroup:
-        group.regions.clear()
-        group.regions.extend(regions)
+        await self._session.execute(
+            delete(CarrierServiceGeoGroupRegion).where(CarrierServiceGeoGroupRegion.group_id == group.id)
+        )
+        self._session.add_all(list(regions))
         await self._session.flush()
         return group
 

@@ -90,8 +90,6 @@ class CreateGeoGroupCommand:
     group_name: str
     status: CarrierServiceGeoGroupStatus = CarrierServiceGeoGroupStatus.SCHEDULED
     description: str | None = None
-    effective_date: datetime | None = None
-    expire_date: datetime | None = None
     attributes: dict[str, Any] | None = None
 
 
@@ -103,8 +101,6 @@ class UpdateGeoGroupCommand:
     group_name: str
     status: CarrierServiceGeoGroupStatus
     description: str | None = None
-    effective_date: datetime | None = None
-    expire_date: datetime | None = None
     attributes: dict[str, Any] | None = None
 
 

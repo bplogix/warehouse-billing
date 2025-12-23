@@ -151,8 +151,6 @@ class CarrierServiceGeoGroup(AuditMixin, Base):
         server_default=CarrierServiceGeoGroupStatus.SCHEDULED.value,
         comment="分组状态",
     )
-    effective_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="生效时间")
-    expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="失效时间")
     attributes: Mapped[dict[str, str] | None] = mapped_column("metadata", JSONB, comment="分组扩展信息")
 
     carrier_service: Mapped[CarrierService] = relationship(back_populates="geo_groups")

@@ -230,8 +230,6 @@ class CreateGeoGroupUseCase:
                 group_name=cmd.group_name,
                 description=cmd.description,
                 status=cmd.status,
-                effective_date=cmd.effective_date,
-                expire_date=cmd.expire_date,
                 attributes=cmd.attributes,
             )
             group.created_by = operator
@@ -266,8 +264,6 @@ class UpdateGeoGroupUseCase:
             group.group_name = cmd.group_name
             group.status = cmd.status
             group.description = cmd.description
-            group.effective_date = cmd.effective_date
-            group.expire_date = cmd.expire_date
             group.attributes = cmd.attributes
             group.updated_by = operator
             await self._session.flush()
@@ -314,6 +310,7 @@ class AssignGeoGroupRegionsUseCase:
                 region = region_map[code]
                 new_regions.append(
                     CarrierServiceGeoGroupRegion(
+                        group_id=group.id,
                         region_code=region.region_code,
                         region_level=region.level,
                         priority=idx,
