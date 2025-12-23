@@ -75,23 +75,15 @@ class CarrierListResponse(CamelModel):
 class CarrierServiceCreateSchema(CamelModel):
     service_code: str = Field(alias="serviceCode")
     service_name: str = Field(alias="serviceName")
-    service_type: str = Field(alias="serviceType")
     status: CarrierServiceStatus = CarrierServiceStatus.ACTIVE
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
-    coverage_group_code: str | None = Field(default=None, alias="coverageGroupCode")
     attributes: dict[str, Any] | None = None
 
 
 class CarrierServiceUpdateSchema(CamelModel):
     service_name: str = Field(alias="serviceName")
-    service_type: str = Field(alias="serviceType")
     status: CarrierServiceStatus
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
-    coverage_group_code: str | None = Field(default=None, alias="coverageGroupCode")
     attributes: dict[str, Any] | None = None
 
 
@@ -100,12 +92,8 @@ class CarrierServiceSchema(CamelModel):
     carrier_id: int = Field(alias="carrierId")
     service_code: str = Field(alias="serviceCode")
     service_name: str = Field(alias="serviceName")
-    service_type: str = Field(alias="serviceType")
     status: CarrierServiceStatus
     description: str | None = None
-    effective_date: datetime | None = Field(default=None, alias="effectiveDate")
-    expire_date: datetime | None = Field(default=None, alias="expireDate")
-    coverage_group_code: str | None = Field(default=None, alias="coverageGroupCode")
 
     @classmethod
     def from_model(cls, model: CarrierService) -> CarrierServiceSchema:
@@ -114,12 +102,8 @@ class CarrierServiceSchema(CamelModel):
             carrierId=model.carrier_id,
             serviceCode=model.service_code,
             serviceName=model.service_name,
-            serviceType=model.service_type,
             status=CarrierServiceStatus(model.status),
             description=model.description,
-            effectiveDate=model.effective_date,
-            expireDate=model.expire_date,
-            coverageGroupCode=model.coverage_group_code,
         )
 
 
@@ -219,7 +203,7 @@ class CarrierServiceTariffSnapshotSchema(CamelModel):
     service_code: str = Field(alias="serviceCode")
     effective_from: datetime | None = Field(default=None, alias="effectiveFrom")
     effective_to: datetime | None = Field(default=None, alias="effectiveTo")
-    payload: "CarrierServiceTariffSnapshotPayloadSchema"
+    payload: CarrierServiceTariffSnapshotPayloadSchema
 
     @classmethod
     def from_model(cls, model: Any) -> CarrierServiceTariffSnapshotSchema:

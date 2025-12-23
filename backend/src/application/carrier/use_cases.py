@@ -148,12 +148,8 @@ class CreateCarrierServiceUseCase:
                 carrier_id=cmd.carrier_id,
                 service_code=cmd.service_code,
                 service_name=cmd.service_name,
-                service_type=cmd.service_type,
                 status=cmd.status,
                 description=cmd.description,
-                effective_date=cmd.effective_date,
-                expire_date=cmd.expire_date,
-                coverage_group_code=cmd.coverage_group_code,
                 attributes=cmd.attributes,
             )
             service.created_by = operator
@@ -173,12 +169,8 @@ class UpdateCarrierServiceUseCase:
             if service is None or service.carrier_id != cmd.carrier_id:
                 return None
             service.service_name = cmd.service_name
-            service.service_type = cmd.service_type
             service.status = cmd.status
             service.description = cmd.description
-            service.effective_date = cmd.effective_date
-            service.expire_date = cmd.expire_date
-            service.coverage_group_code = cmd.coverage_group_code
             service.attributes = cmd.attributes
             service.updated_by = operator
             await self._session.flush()
@@ -429,11 +421,8 @@ def _build_tariff_snapshot_payload(
     weight_max_values = sorted({row.weight_max_kg for row in rows if row.weight_max_kg is not None})
     volume_max_values = sorted({row.volume_max_cm3 for row in rows if row.volume_max_cm3 is not None})
 
-    region_axis = [
-        {"code": code, "name": region_name_map.get(code, "")}
-        for code in region_codes
-    ]
-    metric_axis: dict[str, list[object]] = {}
+    region_axis = [{"code": code, "name": region_name_map.get(code, "")} for code in region_codes]
+    metric_axis: dict[str, list[float] | list[int]] = {}
     if weight_max_values:
         metric_axis["weight_max_kg"] = weight_max_values
     if volume_max_values:

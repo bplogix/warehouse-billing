@@ -171,12 +171,8 @@ async def create_carrier_service(
         carrier_id=carrier_id,
         service_code=payload.service_code,
         service_name=payload.service_name,
-        service_type=payload.service_type,
         status=payload.status,
         description=payload.description,
-        effective_date=payload.effective_date,
-        expire_date=payload.expire_date,
-        coverage_group_code=payload.coverage_group_code,
         attributes=payload.attributes,
     )
     try:
@@ -203,12 +199,8 @@ async def update_carrier_service(
         service_id=service_id,
         carrier_id=carrier_id,
         service_name=payload.service_name,
-        service_type=payload.service_type,
         status=payload.status,
         description=payload.description,
-        effective_date=payload.effective_date,
-        expire_date=payload.expire_date,
-        coverage_group_code=payload.coverage_group_code,
         attributes=payload.attributes,
     )
     service = await use_case.execute(cmd, operator=current_user.user_id)

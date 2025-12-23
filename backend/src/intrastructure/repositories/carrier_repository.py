@@ -13,10 +13,10 @@ from src.intrastructure.database.models import (
     CarrierServiceGeoGroupRegion,
     CarrierServiceGeoGroupStatus,
     CarrierServiceStatus,
-    CarrierStatus,
-    Region,
     CarrierServiceTariff,
     CarrierServiceTariffSnapshot,
+    CarrierStatus,
+    Region,
 )
 
 

@@ -13,9 +13,7 @@ class DingTalkAuthSettings(BaseSettings):
     APP_SECRET: str = ""
     BASE_URL: Annotated[AnyHttpUrl | str, Field(default="https://oapi.dingtalk.com")] = "https://oapi.dingtalk.com"
     AUTH_MOCK: bool = False
-    ROLE_DOMAIN_MAPPING: dict[str, list[str]] = {
-        "ROLE_STD_AGENT": ["GENERAL_WAREHOUSING"]
-    }
+    ROLE_DOMAIN_MAPPING: dict[str, list[str]] = {"ROLE_STD_AGENT": ["GENERAL_WAREHOUSING"]}
     QR_STATE_PREFIX: str = "dingtalk:qr"
     QR_STATE_TTL_SECONDS: int = 120
     QR_REDIRECT_URI: Annotated[AnyHttpUrl | str, Field(default="")] = ""

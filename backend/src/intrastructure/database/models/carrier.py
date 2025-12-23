@@ -102,8 +102,6 @@ class CarrierService(AuditMixin, Base):
     service_code: Mapped[str] = mapped_column(String(64), nullable=False, comment="运输服务编码")
     service_name: Mapped[str] = mapped_column(String(128), nullable=False, comment="运输服务名称")
     description: Mapped[str | None] = mapped_column(Text, comment="运输服务描述")
-    service_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="运输服务类型")
-
     status: Mapped[str] = mapped_column(
         String,
         nullable=False,
@@ -111,9 +109,6 @@ class CarrierService(AuditMixin, Base):
         server_default=CarrierServiceStatus.ACTIVE.value,
         comment="运输服务状态",
     )
-    effective_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="生效时间")
-    expire_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="失效时间")
-    coverage_group_code: Mapped[str | None] = mapped_column(String(64), comment="覆盖分组编码")
     attributes: Mapped[dict[str, str] | None] = mapped_column("metadata", JSONB, comment="服务扩展信息")
 
     carrier: Mapped[Carrier] = relationship(back_populates="services")
@@ -228,7 +223,9 @@ class CarrierServiceTariff(AuditMixin, Base):
     weight_max_kg: Mapped[float | None] = mapped_column(comment="重量上限(kg)")
     volume_max_cm3: Mapped[int | None] = mapped_column(comment="体积上限(cm^3)")
     girth_max_cm: Mapped[int | None] = mapped_column(comment="三边合计上限(cm)")
-    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="JPY", server_default="JPY", comment="币种")
+    currency: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="JPY", server_default="JPY", comment="币种"
+    )
     price_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="价格(最小货币单位)")
 
     carrier_service: Mapped[CarrierService] = relationship()

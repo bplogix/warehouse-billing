@@ -51,12 +51,8 @@ class CreateCarrierServiceCommand:
     carrier_id: int
     service_code: str
     service_name: str
-    service_type: str
     status: CarrierServiceStatus = CarrierServiceStatus.ACTIVE
     description: str | None = None
-    effective_date: datetime | None = None
-    expire_date: datetime | None = None
-    coverage_group_code: str | None = None
     attributes: dict[str, Any] | None = None
 
 
@@ -65,12 +61,8 @@ class UpdateCarrierServiceCommand:
     service_id: int
     carrier_id: int
     service_name: str
-    service_type: str
     status: CarrierServiceStatus
     description: str | None = None
-    effective_date: datetime | None = None
-    expire_date: datetime | None = None
-    coverage_group_code: str | None = None
     attributes: dict[str, Any] | None = None
 
 

@@ -17,7 +17,7 @@ def get_token_service() -> TokenService:
 
 @lru_cache
 def get_dingtalk_gateway():
-    if settings.dingtalk.AUTH_MOCK == True:
+    if settings.dingtalk.AUTH_MOCK:
         return MockDingTalkAuthGateway()
     return RealDingTalkAuthGateway()
 
