@@ -55,12 +55,8 @@ export type CarrierService = {
   carrierId: number
   serviceCode: string
   serviceName: string
-  serviceType: string
   status: CarrierServiceStatus
-  coverageGroupCode?: string | null
   description?: string | null
-  effectiveDate?: string | null
-  expireDate?: string | null
   attributes?: Record<string, unknown> | null
 }
 
@@ -78,23 +74,15 @@ export type CarrierServiceQuery = {
 export type CarrierServiceCreatePayload = {
   serviceCode: string
   serviceName: string
-  serviceType: string
   status?: CarrierServiceStatus
-  coverageGroupCode?: string | null
   description?: string | null
-  effectiveDate?: string | null
-  expireDate?: string | null
   attributes?: Record<string, unknown> | null
 }
 
 export type CarrierServiceUpdatePayload = {
   serviceName: string
-  serviceType: string
   status: CarrierServiceStatus
-  coverageGroupCode?: string | null
   description?: string | null
-  effectiveDate?: string | null
-  expireDate?: string | null
   attributes?: Record<string, unknown> | null
 }
 
@@ -175,7 +163,6 @@ export type RegionQuery = {
 }
 
 export type TariffRowPayload = {
-  regionCode: string
   weightMaxKg?: number | null
   volumeMaxCm3?: number | null
   girthMaxCm?: number | null
@@ -184,8 +171,17 @@ export type TariffRowPayload = {
 
 export type TariffCreatePayload = {
   geoGroupId: number
-  currency?: string
   effectiveFrom?: string | null
   effectiveTo?: string | null
   rows: TariffRowPayload[]
+}
+
+export type CarrierServiceTariffGroup = {
+  geoGroupId: number
+  currency: string
+  rows: TariffRowPayload[]
+}
+
+export type CarrierServiceTariffGroupListResponse = {
+  items: CarrierServiceTariffGroup[]
 }

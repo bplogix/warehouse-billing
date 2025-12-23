@@ -32,11 +32,7 @@ import type {
 
 type ServiceUpdateValues = {
   serviceName: string
-  serviceType: string
   status: CarrierServiceStatus
-  coverageGroupCode: string
-  effectiveDate: string
-  expireDate: string
   description: string
 }
 
@@ -48,11 +44,7 @@ const statusOptions: { value: CarrierServiceStatus; label: string }[] = [
 
 const updateDefaults: ServiceUpdateValues = {
   serviceName: '',
-  serviceType: '',
   status: 'ACTIVE',
-  coverageGroupCode: '',
-  effectiveDate: '',
-  expireDate: '',
   description: '',
 }
 
@@ -63,18 +55,6 @@ const statusBadgeVariant: Record<
   ACTIVE: 'secondary',
   INACTIVE: 'outline',
   SUSPENDED: 'outline',
-}
-
-const formatDate = (value?: string | null) => {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString()
-}
-
-const toDateInput = (value?: string | null) => {
-  if (!value) return ''
-  return value.slice(0, 10)
 }
 
 type Props = {
@@ -131,11 +111,7 @@ const CarrierServicePanel = ({
     }
     updateForm.reset({
       serviceName: selectedService.serviceName,
-      serviceType: selectedService.serviceType,
       status: selectedService.status,
-      coverageGroupCode: selectedService.coverageGroupCode ?? '',
-      effectiveDate: toDateInput(selectedService.effectiveDate),
-      expireDate: toDateInput(selectedService.expireDate),
       description: selectedService.description ?? '',
     })
   }, [selectedService, updateForm])
@@ -144,16 +120,8 @@ const CarrierServicePanel = ({
     if (!carrier || !selectedService) return
     const payload: CarrierServiceUpdatePayload = {
       serviceName: values.serviceName.trim(),
-      serviceType: values.serviceType.trim(),
       status: values.status,
-      coverageGroupCode: values.coverageGroupCode.trim() || null,
       description: values.description.trim() || null,
-      effectiveDate: values.effectiveDate
-        ? new Date(values.effectiveDate).toISOString()
-        : null,
-      expireDate: values.expireDate
-        ? new Date(values.expireDate).toISOString()
-        : null,
     }
     await onUpdate(carrier.id, selectedService.id, payload)
   }
@@ -208,10 +176,6 @@ const CarrierServicePanel = ({
                     <p className="text-sm font-semibold">
                       {service.serviceName} ({service.serviceCode})
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      类型 {service.serviceType} · 生效：
-                      {formatDate(service.effectiveDate)}
-                    </p>
                   </div>
                   <Badge variant={statusBadgeVariant[service.status]}>
                     {
@@ -257,82 +221,33 @@ const CarrierServicePanel = ({
                     />
                     <FormField
                       control={updateForm.control}
-                      name="serviceType"
+                      name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>服务类型</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
+                          <FormLabel>状态</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="选择状态" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {statusOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </FormItem>
                       )}
                     />
-                  </div>
-                  <FormField
-                    control={updateForm.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>状态</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="选择状态" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {statusOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <FormField
-                      control={updateForm.control}
-                      name="coverageGroupCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>覆盖组编码</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <FormField
-                        control={updateForm.control}
-                        name="effectiveDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>生效日期</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={updateForm.control}
-                        name="expireDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>失效日期</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
                   </div>
                   <FormField
                     control={updateForm.control}

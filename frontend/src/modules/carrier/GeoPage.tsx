@@ -1,4 +1,5 @@
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -45,6 +46,50 @@ const buildGroupCode = (name: string) => {
   return `GEO-${normalized || fallback}`
 }
 
+type RegionOptionProps = {
+  checkboxId: string
+  name: string
+  regionCode: string
+  checked: boolean
+  disabled: boolean
+  onToggle: (regionCode: string) => void
+}
+
+const RegionOption = memo(
+  ({
+    checkboxId,
+    name,
+    regionCode,
+    checked,
+    disabled,
+    onToggle,
+  }: RegionOptionProps) => {
+    const handleToggle = useCallback(() => {
+      if (disabled) return
+      onToggle(regionCode)
+    }, [disabled, onToggle, regionCode])
+
+    return (
+      <div className="flex items-center">
+        <Checkbox
+          id={checkboxId}
+          name={checkboxId}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={handleToggle}
+        />
+        <Label
+          htmlFor={checkboxId}
+          className={cn('ml-2 text-sm', disabled && 'text-muted-foreground')}
+        >
+          {name}
+        </Label>
+      </div>
+    )
+  },
+)
+RegionOption.displayName = 'RegionOption'
+
 const GeoPage = () => {
   const notify = useToastStore((state) => state.showToast)
   const carriers = useCarrierStore((state) => state.carriers)
@@ -77,6 +122,10 @@ const GeoPage = () => {
   const allRegionCodes = useMemo(
     () => regions.map((region) => region.regionCode),
     [regions],
+  )
+  const selectedRegionSet = useMemo(
+    () => new Set(selectedRegionCodes),
+    [selectedRegionCodes],
   )
   const selectedGroup = useMemo(
     () => geoGroups.find((group) => group.id === selectedGroupId) ?? null,
@@ -132,7 +181,15 @@ const GeoPage = () => {
   ])
 
   const loadGeoGroups = useCallback(async () => {
-    if (!selectedCarrierId || !selectedServiceId) {
+    const hasSelectedService =
+      selectedServiceId != null &&
+      serviceOptions.some((service) => service.id === selectedServiceId)
+    if (
+      !selectedCarrierId ||
+      !hasSelectedService ||
+      servicesCarrierId !== selectedCarrierId ||
+      servicesLoading
+    ) {
       setGeoGroups([])
       return
     }
@@ -159,7 +216,14 @@ const GeoPage = () => {
     } finally {
       setGroupsLoading(false)
     }
-  }, [notify, selectedCarrierId, selectedServiceId])
+  }, [
+    notify,
+    selectedCarrierId,
+    selectedServiceId,
+    serviceOptions,
+    servicesCarrierId,
+    servicesLoading,
+  ])
 
   const loadRegions = useCallback(async () => {
     setRegionsLoading(true)
@@ -186,13 +250,13 @@ const GeoPage = () => {
     void loadGeoGroups()
   }, [loadGeoGroups])
 
-  const toggleRegion = (regionCode: string) => {
+  const toggleRegion = useCallback((regionCode: string) => {
     setSelectedRegionCodes((prev) =>
       prev.includes(regionCode)
         ? prev.filter((code) => code !== regionCode)
         : [...prev, regionCode],
     )
-  }
+  }, [])
 
   useEffect(() => {
     if (isCreating) {
@@ -307,7 +371,14 @@ const GeoPage = () => {
             <Select
               name="geoCarrierId"
               value={selectedCarrierId ? String(selectedCarrierId) : ''}
-              onValueChange={(value) => setSelectedCarrierId(Number(value))}
+              onValueChange={(value) => {
+                setSelectedServiceId(null)
+                setSelectedGroupId(null)
+                setIsCreating(false)
+                setGeoGroups([])
+                setSelectedRegionCodes([])
+                setSelectedCarrierId(Number(value))
+              }}
               disabled={loadingCarriers}
             >
               <SelectTrigger id="carrier-select">
@@ -505,36 +576,21 @@ const GeoPage = () => {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {regions.map((region) => {
                         const checkboxId = `region-${region.regionCode}`
-                        const isChecked = selectedRegionCodes.includes(
+                        const isChecked = selectedRegionSet.has(
                           region.regionCode,
                         )
                         const isUsed = usedRegionCodes.has(region.regionCode)
                         const isDisabled = isUsed && !isChecked
                         return (
-                          <div
+                          <RegionOption
                             key={region.regionCode}
-                            className="flex items-center"
-                          >
-                            <Checkbox
-                              id={checkboxId}
-                              name={checkboxId}
-                              checked={isChecked}
-                              disabled={isDisabled}
-                              onCheckedChange={() => {
-                                if (isDisabled) return
-                                toggleRegion(region.regionCode)
-                              }}
-                            />
-                            <Label
-                              htmlFor={checkboxId}
-                              className={cn(
-                                'ml-2 text-sm',
-                                isDisabled && 'text-muted-foreground',
-                              )}
-                            >
-                              {region.name}
-                            </Label>
-                          </div>
+                            checkboxId={checkboxId}
+                            name={region.name}
+                            regionCode={region.regionCode}
+                            checked={isChecked}
+                            disabled={isDisabled}
+                            onToggle={toggleRegion}
+                          />
                         )
                       })}
                     </div>

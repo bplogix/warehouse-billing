@@ -20,6 +20,8 @@ import type {
   RegionListResponse,
   RegionQuery,
   TariffCreatePayload,
+  CarrierServiceTariffGroup,
+  CarrierServiceTariffGroupListResponse,
 } from './types'
 
 export const fetchCarriers = (query?: CarrierQuery) =>
@@ -112,4 +114,18 @@ export const createTariffs = (
   apiPost(
     `/v1/carriers/${carrierId}/services/${serviceId}/tariffs`,
     payload,
+  )
+
+export const fetchGeoGroupTariffs = (
+  carrierId: number,
+  serviceId: number,
+  groupId: number,
+) =>
+  apiGet<CarrierServiceTariffGroup>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups/${groupId}/tariffs`,
+  )
+
+export const fetchServiceTariffs = (carrierId: number, serviceId: number) =>
+  apiGet<CarrierServiceTariffGroupListResponse>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/tariffs`,
   )

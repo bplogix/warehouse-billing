@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Card } from '@/components/ui/display/card'
 import { Button } from '@/components/ui/form-controls/button'
@@ -21,9 +21,9 @@ import {
 import { useToastStore } from '@/stores/useToastStore'
 import { cn } from '@/utils/utils'
 
-import { createTariffs, fetchGeoGroups } from './api'
+import { createTariffs, fetchGeoGroups, fetchServiceTariffs } from './api'
 import { useCarrierStore } from './stores/useCarrierStore'
-import type { CarrierService, GeoGroup } from './types'
+import type { CarrierService, GeoGroup, TariffRowPayload } from './types'
 
 type TariffRowForm = {
   girthMaxCm: string
@@ -77,7 +77,6 @@ const TariffsPage = () => {
   const [groupsLoading, setGroupsLoading] = useState(false)
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([])
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null)
-  const [currency, setCurrency] = useState('JPY')
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [effectiveTo, setEffectiveTo] = useState('')
   const [useGirth, setUseGirth] = useState(true)
@@ -87,20 +86,44 @@ const TariffsPage = () => {
     {},
   )
   const [submitting, setSubmitting] = useState(false)
+  const [tariffGroupIds, setTariffGroupIds] = useState<number[]>([])
+  const tariffsLoadedRef = useRef<Set<number>>(new Set())
 
   const carrierOptions = carriers
-  const serviceOptions: CarrierService[] =
-    selectedCarrierId && servicesCarrierId === selectedCarrierId ? services : []
+  const serviceOptions: CarrierService[] = useMemo(
+    () =>
+      selectedCarrierId && servicesCarrierId === selectedCarrierId
+        ? services
+        : [],
+    [selectedCarrierId, services, servicesCarrierId],
+  )
 
   const selectedGroups = useMemo(
     () => geoGroups.filter((group) => selectedGroupIds.includes(group.id)),
     [geoGroups, selectedGroupIds],
   )
-  const activeGroup = useMemo(
-    () => geoGroups.find((group) => group.id === activeGroupId) ?? null,
-    [geoGroups, activeGroupId],
-  )
 
+  const mapTariffRows = useCallback((rows: TariffRowPayload[]) => {
+    return rows.map((row) => ({
+      girthMaxCm: row.girthMaxCm != null ? String(row.girthMaxCm) : '',
+      volumeMaxCm3: row.volumeMaxCm3 != null ? String(row.volumeMaxCm3) : '',
+      weightMaxKg: row.weightMaxKg != null ? String(row.weightMaxKg) : '',
+      priceAmount: row.priceAmount != null ? String(row.priceAmount) : '',
+    }))
+  }, [])
+
+  const syncDimensionsFromRows = useCallback(
+    (rows: TariffRowPayload[]) => {
+      const hasGirth = rows.some((row) => row.girthMaxCm != null)
+      const hasVolume = rows.some((row) => row.volumeMaxCm3 != null)
+      const hasWeight = rows.some((row) => row.weightMaxKg != null)
+      if (!hasGirth && !hasVolume && !hasWeight) return
+      setUseGirth(hasGirth)
+      setUseVolume(hasVolume)
+      setUseWeight(hasWeight)
+    },
+    [setUseGirth, setUseVolume, setUseWeight],
+  )
   useEffect(() => {
     void fetchCarriers({ limit: 100 })
   }, [fetchCarriers])
@@ -117,6 +140,7 @@ const TariffsPage = () => {
     setSelectedGroupIds([])
     setActiveGroupId(null)
     setMatrixMap({})
+    setTariffGroupIds([])
     void fetchCarrierServices(selectedCarrierId, { limit: 100 })
   }, [fetchCarrierServices, selectedCarrierId])
 
@@ -139,8 +163,21 @@ const TariffsPage = () => {
     selectedServiceId,
   ])
 
+  useEffect(() => {
+    tariffsLoadedRef.current.clear()
+    setTariffGroupIds([])
+  }, [selectedCarrierId, selectedServiceId])
+
   const loadGeoGroups = useCallback(async () => {
-    if (!selectedCarrierId || !selectedServiceId) {
+    const hasSelectedService =
+      selectedServiceId != null &&
+      serviceOptions.some((service) => service.id === selectedServiceId)
+    if (
+      !selectedCarrierId ||
+      !hasSelectedService ||
+      servicesCarrierId !== selectedCarrierId ||
+      servicesLoading
+    ) {
       setGeoGroups([])
       return
     }
@@ -150,13 +187,20 @@ const TariffsPage = () => {
         limit: 200,
       })
       setGeoGroups(res.items)
-      const nextSelected = selectedGroupIds.filter((id) =>
-        res.items.some((group) => group.id === id),
-      )
-      setSelectedGroupIds(nextSelected)
-      setActiveGroupId((prev) =>
-        prev && nextSelected.includes(prev) ? prev : nextSelected[0] ?? null,
-      )
+      const validIds = new Set(res.items.map((group) => group.id))
+      setSelectedGroupIds((prev) => {
+        const nextSelected = prev.filter((id) => validIds.has(id))
+        const isSame =
+          nextSelected.length === prev.length &&
+          nextSelected.every((id, index) => id === prev[index])
+        const finalSelected = isSame ? prev : nextSelected
+        setActiveGroupId((current) =>
+          current != null && validIds.has(current) && finalSelected.includes(current)
+            ? current
+            : finalSelected[0] ?? null,
+        )
+        return finalSelected
+      })
     } catch (error) {
       console.error(error)
       notify({ message: '加载区域列表失败', severity: 'error' })
@@ -164,25 +208,108 @@ const TariffsPage = () => {
     } finally {
       setGroupsLoading(false)
     }
-  }, [notify, selectedCarrierId, selectedServiceId, selectedGroupIds])
+  }, [
+    notify,
+    selectedCarrierId,
+    selectedServiceId,
+    serviceOptions,
+    servicesCarrierId,
+    servicesLoading,
+  ])
 
   useEffect(() => {
     void loadGeoGroups()
   }, [loadGeoGroups])
 
   useEffect(() => {
+    const hasSelectedService =
+      selectedServiceId != null &&
+      serviceOptions.some((service) => service.id === selectedServiceId)
+    if (
+      !selectedCarrierId ||
+      !hasSelectedService ||
+      servicesCarrierId !== selectedCarrierId ||
+      servicesLoading ||
+      tariffsLoadedRef.current.has(selectedServiceId)
+    ) {
+      return
+    }
+
+    void (async () => {
+      try {
+        const res = await fetchServiceTariffs(
+          selectedCarrierId,
+          selectedServiceId,
+        )
+        const nextMatrix: Record<string, TariffRowForm[]> = {}
+        const nextGroupIds: number[] = []
+        res.items.forEach((groupTariffs) => {
+          nextGroupIds.push(groupTariffs.geoGroupId)
+          nextMatrix[String(groupTariffs.geoGroupId)] = mapTariffRows(
+            groupTariffs.rows,
+          )
+        })
+        if (res.items.length > 0) {
+          syncDimensionsFromRows(res.items[0].rows)
+        }
+        setMatrixMap((prev) => ({
+          ...prev,
+          ...nextMatrix,
+        }))
+        setTariffGroupIds(nextGroupIds)
+        tariffsLoadedRef.current.add(selectedServiceId)
+      } catch (error) {
+        console.error(error)
+        notify({ message: '加载运费定价失败', severity: 'error' })
+      }
+    })()
+  }, [
+    mapTariffRows,
+    notify,
+    selectedCarrierId,
+    selectedServiceId,
+    serviceOptions,
+    servicesCarrierId,
+    servicesLoading,
+    syncDimensionsFromRows,
+  ])
+
+  useEffect(() => {
+    if (selectedGroupIds.length > 0 || tariffGroupIds.length === 0) return
+    if (geoGroups.length === 0) return
+    const geoGroupSet = new Set(geoGroups.map((group) => group.id))
+    const nextSelected = tariffGroupIds.filter((id) => geoGroupSet.has(id))
+    if (nextSelected.length === 0) return
+    setSelectedGroupIds(nextSelected)
+    setActiveGroupId(nextSelected[0])
+  }, [geoGroups, selectedGroupIds.length, tariffGroupIds])
+
+  useEffect(() => {
     setMatrixMap((prev) => {
-      const next = { ...prev }
+      if (selectedGroups.length === 0) return prev
+      const baselineId = selectedGroups[0]?.id
+      const baselineKey = baselineId != null ? String(baselineId) : null
+      const baselineRows =
+        (baselineKey && prev[baselineKey]?.length
+          ? prev[baselineKey]
+          : buildDefaultRows(useGirth, useWeight, useVolume)
+        ).map((row) => ({
+          ...row,
+          girthMaxCm: useGirth ? row.girthMaxCm : '',
+          volumeMaxCm3: useVolume ? row.volumeMaxCm3 : '',
+          weightMaxKg: useWeight ? row.weightMaxKg : '',
+        }))
+
+      const next: Record<string, TariffRowForm[]> = {}
       selectedGroups.forEach((group) => {
         const key = String(group.id)
-        if (!next[key] || next[key].length === 0) {
-          next[key] = buildDefaultRows(useGirth, useWeight, useVolume)
-        }
-      })
-      Object.keys(next).forEach((key) => {
-        if (!selectedGroups.some((group) => String(group.id) === key)) {
-          delete next[key]
-        }
+        const rows = prev[key] ?? []
+        next[key] = baselineRows.map((baseRow, index) => ({
+          girthMaxCm: baseRow.girthMaxCm,
+          volumeMaxCm3: baseRow.volumeMaxCm3,
+          weightMaxKg: baseRow.weightMaxKg,
+          priceAmount: rows[index]?.priceAmount ?? '',
+        }))
       })
       return next
     })
@@ -194,7 +321,7 @@ const TariffsPage = () => {
       return
     }
     setActiveGroupId((prev) =>
-      prev && selectedGroups.some((group) => group.id === prev)
+      prev != null && selectedGroups.some((group) => group.id === prev)
         ? prev
         : selectedGroups[0].id,
     )
@@ -239,21 +366,33 @@ const TariffsPage = () => {
     value: string,
   ) => {
     setMatrixMap((prev) => {
-      const keyId = String(groupId)
-      const rows = prev[keyId] ?? []
-      const nextRows = [...rows]
-      nextRows[index] = { ...nextRows[index], [key]: value }
-      return { ...prev, [keyId]: nextRows }
+      if (key === 'priceAmount') {
+        const keyId = String(groupId)
+        const rows = prev[keyId] ?? []
+        const nextRows = [...rows]
+        nextRows[index] = { ...nextRows[index], [key]: value }
+        return { ...prev, [keyId]: nextRows }
+      }
+
+      const next = { ...prev }
+      selectedGroups.forEach((group) => {
+        const keyId = String(group.id)
+        const rows = next[keyId] ?? []
+        const nextRows = [...rows]
+        nextRows[index] = { ...nextRows[index], [key]: value }
+        next[keyId] = nextRows
+      })
+      return next
     })
   }
 
-  const addRow = (groupId: number) => {
+  const addRow = () => {
     setMatrixMap((prev) => {
-      const keyId = String(groupId)
-      const rows = prev[keyId] ?? []
-      return {
-        ...prev,
-        [keyId]: [
+      const next = { ...prev }
+      selectedGroups.forEach((group) => {
+        const keyId = String(group.id)
+        const rows = next[keyId] ?? []
+        next[keyId] = [
           ...rows,
           {
             girthMaxCm: '',
@@ -261,24 +400,38 @@ const TariffsPage = () => {
             weightMaxKg: '',
             priceAmount: '',
           },
-        ],
-      }
+        ]
+      })
+      return next
     })
   }
 
-  const removeRow = (groupId: number, index: number) => {
+  const removeRow = (index: number) => {
     setMatrixMap((prev) => {
-      const keyId = String(groupId)
-      const rows = prev[keyId] ?? []
-      return { ...prev, [keyId]: rows.filter((_, idx) => idx !== index) }
+      const next = { ...prev }
+      selectedGroups.forEach((group) => {
+        const keyId = String(group.id)
+        const rows = next[keyId] ?? []
+        next[keyId] = rows.filter((_, idx) => idx !== index)
+      })
+      return next
     })
   }
 
-  const applyDefaults = (groupId: number) => {
-    setMatrixMap((prev) => ({
-      ...prev,
-      [String(groupId)]: buildDefaultRows(useGirth, useWeight, useVolume),
-    }))
+  const applyDefaults = () => {
+    const defaultRows = buildDefaultRows(useGirth, useWeight, useVolume)
+    setMatrixMap((prev) => {
+      const next = { ...prev }
+      selectedGroups.forEach((group) => {
+        const keyId = String(group.id)
+        const rows = prev[keyId] ?? []
+        next[keyId] = defaultRows.map((row, index) => ({
+          ...row,
+          priceAmount: rows[index]?.priceAmount ?? '',
+        }))
+      })
+      return next
+    })
   }
 
   const handleSubmit = async () => {
@@ -287,7 +440,7 @@ const TariffsPage = () => {
       return
     }
     if (selectedGroups.length === 0) {
-      notify({ message: '请选择运价覆盖分组', severity: 'warning' })
+      notify({ message: '请选择覆盖区域组', severity: 'warning' })
       return
     }
 
@@ -336,13 +489,11 @@ const TariffsPage = () => {
 
         await createTariffs(selectedCarrierId, selectedServiceId, {
           geoGroupId: group.id,
-          currency: currency.trim() || 'JPY',
           effectiveFrom: effectiveFrom
             ? new Date(effectiveFrom).toISOString()
             : null,
           effectiveTo: effectiveTo ? new Date(effectiveTo).toISOString() : null,
           rows: validRows.map((row) => ({
-            regionCode: group.groupCode,
             girthMaxCm: useGirth ? Number(row.girthMaxCm) : null,
             volumeMaxCm3: useVolume ? Number(row.volumeMaxCm3) : null,
             weightMaxKg: useWeight ? Number(row.weightMaxKg) : null,
@@ -364,7 +515,7 @@ const TariffsPage = () => {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">运费定价</h1>
         <p className="text-sm text-muted-foreground">
-          选择承运商服务与运价覆盖分组后，按尺寸/体积/重量配置价格矩阵。
+          选择承运商服务与覆盖区域组后，按尺寸/体积/重量配置价格矩阵。
         </p>
       </div>
 
@@ -375,7 +526,14 @@ const TariffsPage = () => {
             <Select
               name="tariffCarrierId"
               value={selectedCarrierId ? String(selectedCarrierId) : ''}
-              onValueChange={(value) => setSelectedCarrierId(Number(value))}
+              onValueChange={(value) => {
+                setSelectedServiceId(null)
+                setSelectedGroupIds([])
+                setActiveGroupId(null)
+                setMatrixMap({})
+                setGeoGroups([])
+                setSelectedCarrierId(Number(value))
+              }}
               disabled={loadingCarriers}
             >
               <SelectTrigger id="tariff-carrier">
@@ -463,7 +621,7 @@ const TariffsPage = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">运价覆盖分组</p>
+              <p className="text-sm font-semibold">覆盖区域组</p>
               <Button
                 variant="ghost"
                 size="sm"
@@ -481,7 +639,7 @@ const TariffsPage = () => {
               )}
               {!groupsLoading && geoGroups.length === 0 && (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  暂无运价覆盖分组，请先在运价覆盖页面创建
+                  暂无覆盖区域组，请先在运价覆盖页面创建
                 </p>
               )}
               {geoGroups.map((group) => {
@@ -512,74 +670,45 @@ const TariffsPage = () => {
             </div>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="tariff-currency">币种</Label>
+              <Label htmlFor="tariff-effective-from">生效时间</Label>
               <Input
-                id="tariff-currency"
-                name="tariffCurrency"
-                value={currency}
-                onChange={(event) => setCurrency(event.target.value)}
-                placeholder="JPY"
+                id="tariff-effective-from"
+                name="tariffEffectiveFrom"
+                type="datetime-local"
+                value={effectiveFrom}
+                onChange={(event) => setEffectiveFrom(event.target.value)}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="tariff-effective-from">生效时间</Label>
-                <Input
-                  id="tariff-effective-from"
-                  name="tariffEffectiveFrom"
-                  type="datetime-local"
-                  value={effectiveFrom}
-                  onChange={(event) => setEffectiveFrom(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tariff-effective-to">失效时间</Label>
-                <Input
-                  id="tariff-effective-to"
-                  name="tariffEffectiveTo"
-                  type="datetime-local"
-                  value={effectiveTo}
-                  onChange={(event) => setEffectiveTo(event.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="tariff-effective-to">失效时间</Label>
+              <Input
+                id="tariff-effective-to"
+                name="tariffEffectiveTo"
+                type="datetime-local"
+                value={effectiveTo}
+                onChange={(event) => setEffectiveTo(event.target.value)}
+              />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">区域编码</p>
-            <div className="rounded-lg border bg-background/60 px-3 py-2 text-sm">
-              {activeGroup && (
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-                    {activeGroup.groupCode}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    使用分组编码作为 regionCode
-                  </span>
-                </div>
-              )}
-              {!activeGroup && (
-                <p className="py-2 text-muted-foreground">
-                  选择分组后可查看 regionCode
-                </p>
-              )}
-            </div>
-          </div>
         </Card>
 
         <div className="space-y-6">
           {selectedGroups.length === 0 && (
             <Card className="border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
-              请选择运价覆盖分组后开始配置运费矩阵。
+              请选择覆盖区域组后开始配置运费矩阵。
             </Card>
           )}
 
           {selectedGroups.length > 0 && (
             <Tabs
-              value={activeGroupId ? String(activeGroupId) : ''}
-              onValueChange={(value) => setActiveGroupId(Number(value))}
+              value={activeGroupId == null ? '' : String(activeGroupId)}
+              onValueChange={(value) => {
+                const nextId = Number(value)
+                setActiveGroupId(Number.isNaN(nextId) ? null : nextId)
+              }}
               className="space-y-4"
             >
               <TabsList className="flex flex-wrap justify-start gap-2">
@@ -611,12 +740,12 @@ const TariffsPage = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => applyDefaults(group.id)}
+                            onClick={applyDefaults}
                             disabled={!useGirth && !useWeight}
                           >
                             生成默认行
                           </Button>
-                          <Button size="sm" onClick={() => addRow(group.id)}>
+                          <Button size="sm" onClick={addRow}>
                             新增行
                           </Button>
                         </div>
@@ -722,15 +851,16 @@ const TariffsPage = () => {
                                   />
                                 </td>
                                 <td className="px-3 py-2 text-right">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeRow(group.id, index)}
-                                    disabled={rows.length <= 1}
-                                  >
-                                    删除
-                                  </Button>
+                                  {rows.length > 1 && index === rows.length - 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeRow(index)}
+                                    >
+                                      删除
+                                    </Button>
+                                  )}
                                 </td>
                               </tr>
                             ))}

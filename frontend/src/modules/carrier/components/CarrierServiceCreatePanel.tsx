@@ -36,11 +36,7 @@ import type {
 type ServiceCreateValues = {
   serviceCode: string
   serviceName: string
-  serviceType: string
   status: CarrierServiceStatus
-  coverageGroupCode: string
-  effectiveDate: string
-  expireDate: string
   description: string
 }
 
@@ -53,11 +49,7 @@ const statusOptions: { value: CarrierServiceStatus; label: string }[] = [
 const createDefaults: ServiceCreateValues = {
   serviceCode: '',
   serviceName: '',
-  serviceType: '',
   status: 'ACTIVE',
-  coverageGroupCode: '',
-  effectiveDate: '',
-  expireDate: '',
   description: '',
 }
 
@@ -85,16 +77,8 @@ const CarrierServiceCreatePanel = ({ carrier, onCreate }: Props) => {
     const payload: CarrierServiceCreatePayload = {
       serviceCode: values.serviceCode.trim().toUpperCase(),
       serviceName: values.serviceName.trim(),
-      serviceType: values.serviceType.trim(),
       status: values.status,
-      coverageGroupCode: values.coverageGroupCode.trim() || null,
       description: values.description.trim() || null,
-      effectiveDate: values.effectiveDate
-        ? new Date(values.effectiveDate).toISOString()
-        : null,
-      expireDate: values.expireDate
-        ? new Date(values.expireDate).toISOString()
-        : null,
     }
     await onCreate(carrier.id, payload)
     createForm.reset(createDefaults)
@@ -117,7 +101,7 @@ const CarrierServiceCreatePanel = ({ carrier, onCreate }: Props) => {
           <DialogHeader>
             <DialogTitle>新增服务</DialogTitle>
             <DialogDescription>
-              定义服务编码、渠道类型与生效区间
+              定义服务编码与状态信息
             </DialogDescription>
           </DialogHeader>
           <Form {...createForm}>
@@ -161,88 +145,29 @@ const CarrierServiceCreatePanel = ({ carrier, onCreate }: Props) => {
                   )}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={createForm.control}
-                  name="serviceType"
-                  rules={{ required: '请输入服务类型' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>服务类型</FormLabel>
+              <FormField
+                control={createForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>状态</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input placeholder="干线 / 派送 / 快递" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择状态" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>状态</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="请选择状态" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {statusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={createForm.control}
-                  name="coverageGroupCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>覆盖分组</FormLabel>
-                      <FormControl>
-                        <Input placeholder="如：JP-TOKYO" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="effectiveDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>生效日期</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={createForm.control}
-                  name="expireDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>失效日期</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={createForm.control}
                 name="description"
