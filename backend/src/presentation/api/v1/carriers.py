@@ -22,7 +22,6 @@ from src.application.carrier.exceptions import (
     CarrierServiceGeoGroupConflictError,
     CarrierServiceGeoGroupNotFoundError,
     CarrierServiceNotFoundError,
-    CarrierServiceTariffRegionMismatchError,
     RegionNotFoundError,
 )
 from src.application.carrier.use_cases import (
@@ -225,12 +224,10 @@ async def upsert_carrier_service_tariffs(
         carrier_id=carrier_id,
         service_id=service_id,
         geo_group_id=payload.geo_group_id,
-        currency=payload.currency,
         effective_from=payload.effective_from,
         effective_to=payload.effective_to,
         rows=[
             CarrierServiceTariffRowInput(
-                region_code=row.region_code,
                 weight_max_kg=row.weight_max_kg,
                 volume_max_cm3=row.volume_max_cm3,
                 girth_max_cm=row.girth_max_cm,
@@ -246,8 +243,6 @@ async def upsert_carrier_service_tariffs(
     except CarrierServiceGeoGroupNotFoundError as exc:
         raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
     except RegionNotFoundError as exc:
-        raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
-    except CarrierServiceTariffRegionMismatchError as exc:
         raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
     return SuccessResponse(data=CarrierServiceTariffSnapshotSchema.from_model(snapshot))
 

@@ -24,7 +24,6 @@ from src.application.carrier.exceptions import (
     CarrierServiceGeoGroupConflictError,
     CarrierServiceGeoGroupNotFoundError,
     CarrierServiceNotFoundError,
-    CarrierServiceTariffRegionMismatchError,
     RegionNotFoundError,
 )
 from src.intrastructure.database.models import (
@@ -359,15 +358,10 @@ class SetCarrierServiceTariffsUseCase:
             if not region_codes:
                 raise RegionNotFoundError("geo group has no regions")
 
-            region_code_set = set(region_codes)
-            for row in cmd.rows:
-                if row.region_code not in region_code_set:
-                    raise CarrierServiceTariffRegionMismatchError("region not in geo group")
-
             tariffs = [
                 CarrierServiceTariff(
                     carrier_service_id=cmd.service_id,
-                    region_code=row.region_code,
+                    region_code=region_code,
                     weight_max_kg=row.weight_max_kg,
                     volume_max_cm3=row.volume_max_cm3,
                     girth_max_cm=row.girth_max_cm,
@@ -375,6 +369,7 @@ class SetCarrierServiceTariffsUseCase:
                     price_amount=row.price_amount,
                     created_by=operator,
                 )
+                for region_code in region_codes
                 for row in cmd.rows
             ]
             await self._repo.replace_tariffs(cmd.service_id, region_codes, tariffs)
@@ -431,17 +426,16 @@ def _build_tariff_snapshot_payload(
         metric_axis["girth_max_cm"] = girth_max_values
 
     matrix: list[dict[str, object]] = []
+    region_rows = [
+        {
+            "weight_max_kg": row.weight_max_kg,
+            "volume_max_cm3": row.volume_max_cm3,
+            "girth_max_cm": row.girth_max_cm,
+            "price_amount": row.price_amount,
+        }
+        for row in rows
+    ]
     for code in region_codes:
-        region_rows = [
-            {
-                "weight_max_kg": row.weight_max_kg,
-                "volume_max_cm3": row.volume_max_cm3,
-                "girth_max_cm": row.girth_max_cm,
-                "price_amount": row.price_amount,
-            }
-            for row in rows
-            if row.region_code == code
-        ]
         matrix.append({"region_code": code, "rows": region_rows})
 
     return {

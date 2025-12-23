@@ -180,7 +180,6 @@ class GeoGroupListResponse(CamelModel):
 
 
 class CarrierServiceTariffRowSchema(CamelModel):
-    region_code: str = Field(alias="regionCode")
     weight_max_kg: float | None = Field(default=None, alias="weightMaxKg")
     volume_max_cm3: int | None = Field(default=None, alias="volumeMaxCm3")
     girth_max_cm: int | None = Field(default=None, alias="girthMaxCm")
@@ -189,7 +188,6 @@ class CarrierServiceTariffRowSchema(CamelModel):
 
 class CarrierServiceTariffUpsertSchema(CamelModel):
     geo_group_id: int = Field(alias="geoGroupId")
-    currency: str = "JPY"
     effective_from: datetime | None = Field(default=None, alias="effectiveFrom")
     effective_to: datetime | None = Field(default=None, alias="effectiveTo")
     rows: list[CarrierServiceTariffRowSchema]

@@ -106,7 +106,6 @@ class AssignGeoGroupRegionsCommand:
 
 @dataclass(slots=True)
 class CarrierServiceTariffRowInput:
-    region_code: str
     weight_max_kg: float | None = None
     volume_max_cm3: int | None = None
     girth_max_cm: int | None = None
