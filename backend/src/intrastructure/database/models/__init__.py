@@ -9,6 +9,9 @@ from .carrier import (
     CarrierServiceGeoGroupRegion,
     CarrierServiceGeoGroupStatus,
     CarrierServiceStatus,
+    CarrierServiceTariff,
+    CarrierServiceTariffSnapshot,
+    CarrierServiceTariffSnapshotStatus,
     CarrierStatus,
 )
 from .company import Company
@@ -27,6 +30,9 @@ __all__ = [
     "CarrierServiceGeoGroupStatus",
     "CarrierStatus",
     "CarrierServiceStatus",
+    "CarrierServiceTariff",
+    "CarrierServiceTariffSnapshot",
+    "CarrierServiceTariffSnapshotStatus",
     "Company",
     "Customer",
     "CustomerGroup",

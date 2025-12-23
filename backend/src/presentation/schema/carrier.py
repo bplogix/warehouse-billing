@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import inspect
 
 from src.intrastructure.database.models import (
@@ -193,3 +193,84 @@ class GeoGroupSchema(CamelModel):
 
 class GeoGroupListResponse(CamelModel):
     items: list[GeoGroupSchema]
+
+
+class CarrierServiceTariffRowSchema(CamelModel):
+    region_code: str = Field(alias="regionCode")
+    weight_max_kg: float | None = Field(default=None, alias="weightMaxKg")
+    volume_max_cm3: int | None = Field(default=None, alias="volumeMaxCm3")
+    girth_max_cm: int | None = Field(default=None, alias="girthMaxCm")
+    price_amount: int = Field(alias="priceAmount")
+
+
+class CarrierServiceTariffUpsertSchema(CamelModel):
+    geo_group_id: int = Field(alias="geoGroupId")
+    currency: str = "JPY"
+    effective_from: datetime | None = Field(default=None, alias="effectiveFrom")
+    effective_to: datetime | None = Field(default=None, alias="effectiveTo")
+    rows: list[CarrierServiceTariffRowSchema]
+
+
+class CarrierServiceTariffSnapshotSchema(CamelModel):
+    id: int
+    carrier_id: int = Field(alias="carrierId")
+    service_id: int = Field(alias="serviceId")
+    carrier_code: str = Field(alias="carrierCode")
+    service_code: str = Field(alias="serviceCode")
+    effective_from: datetime | None = Field(default=None, alias="effectiveFrom")
+    effective_to: datetime | None = Field(default=None, alias="effectiveTo")
+    payload: "CarrierServiceTariffSnapshotPayloadSchema"
+
+    @classmethod
+    def from_model(cls, model: Any) -> CarrierServiceTariffSnapshotSchema:
+        return cls(
+            id=model.id,
+            carrierId=model.carrier_id,
+            serviceId=model.service_id,
+            carrierCode=model.carrier_code,
+            serviceCode=model.service_code,
+            effectiveFrom=model.effective_from,
+            effectiveTo=model.effective_to,
+            payload=CarrierServiceTariffSnapshotPayloadSchema.model_validate(model.payload),
+        )
+
+
+class CarrierServiceTariffSnapshotGeoAxisItemSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    code: str
+    name: str
+
+
+class CarrierServiceTariffSnapshotMetricAxisSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    girth_max_cm: list[int] | None = None
+    weight_max_kg: list[float] | None = None
+    volume_max_cm3: list[int] | None = None
+
+
+class CarrierServiceTariffSnapshotMatrixRowSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    girth_max_cm: int | None = None
+    weight_max_kg: float | None = None
+    volume_max_cm3: int | None = None
+    price_amount: int
+
+
+class CarrierServiceTariffSnapshotMatrixSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    region_code: str
+    rows: list[CarrierServiceTariffSnapshotMatrixRowSchema]
+
+
+class CarrierServiceTariffSnapshotPayloadSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    currency: str
+    geo_axis: list[CarrierServiceTariffSnapshotGeoAxisItemSchema]
+    metric_axis: CarrierServiceTariffSnapshotMetricAxisSchema
+    matrix: list[CarrierServiceTariffSnapshotMatrixSchema]
+    generated_at: datetime | None = None

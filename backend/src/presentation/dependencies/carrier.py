@@ -14,6 +14,7 @@ from src.application.carrier.use_cases import (
     ListGeoGroupsUseCase,
     QueryCarrierServicesUseCase,
     QueryCarriersUseCase,
+    SetCarrierServiceTariffsUseCase,
     UpdateCarrierServiceUseCase,
     UpdateCarrierUseCase,
     UpdateGeoGroupUseCase,
@@ -81,3 +82,9 @@ def get_assign_geo_group_regions_use_case(
 
 def get_geo_group_detail_use_case(session: AsyncSession = Depends(get_postgres_session)) -> GetGeoGroupDetailUseCase:
     return GetGeoGroupDetailUseCase(session=session)
+
+
+def get_set_carrier_service_tariffs_use_case(
+    session: AsyncSession = Depends(get_postgres_session),
+) -> SetCarrierServiceTariffsUseCase:
+    return SetCarrierServiceTariffsUseCase(session=session)

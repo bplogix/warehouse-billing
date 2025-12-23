@@ -24,3 +24,7 @@ class CarrierServiceGeoGroupNotFoundError(ValueError):
 
 class RegionNotFoundError(ValueError):
     """Region code not found."""
+
+
+class CarrierServiceTariffRegionMismatchError(ValueError):
+    """Tariff region not in geo group."""

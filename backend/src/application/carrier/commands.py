@@ -110,3 +110,23 @@ class AssignGeoGroupRegionsCommand:
     carrier_id: int
     carrier_service_id: int
     region_codes: Sequence[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class CarrierServiceTariffRowInput:
+    region_code: str
+    weight_max_kg: float | None = None
+    volume_max_cm3: int | None = None
+    girth_max_cm: int | None = None
+    price_amount: int = 0
+
+
+@dataclass(slots=True)
+class SetCarrierServiceTariffsCommand:
+    carrier_id: int
+    service_id: int
+    geo_group_id: int
+    currency: str = "JPY"
+    effective_from: datetime | None = None
+    effective_to: datetime | None = None
+    rows: Sequence[CarrierServiceTariffRowInput] = field(default_factory=list)

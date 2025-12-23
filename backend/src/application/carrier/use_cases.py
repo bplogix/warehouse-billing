@@ -6,11 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.carrier.commands import (
     AssignGeoGroupRegionsCommand,
+    CarrierServiceTariffRowInput,
     CreateCarrierCommand,
     CreateCarrierServiceCommand,
     CreateGeoGroupCommand,
     QueryCarriersCommand,
     QueryCarrierServicesCommand,
+    SetCarrierServiceTariffsCommand,
     UpdateCarrierCommand,
     UpdateCarrierServiceCommand,
     UpdateGeoGroupCommand,
@@ -22,6 +24,7 @@ from src.application.carrier.exceptions import (
     CarrierServiceGeoGroupConflictError,
     CarrierServiceGeoGroupNotFoundError,
     CarrierServiceNotFoundError,
+    CarrierServiceTariffRegionMismatchError,
     RegionNotFoundError,
 )
 from src.intrastructure.database.models import (
@@ -30,6 +33,9 @@ from src.intrastructure.database.models import (
     CarrierServiceGeoGroup,
     CarrierServiceGeoGroupRegion,
     CarrierServiceGeoGroupStatus,
+    CarrierServiceTariff,
+    CarrierServiceTariffSnapshot,
+    CarrierServiceTariffSnapshotStatus,
     Region,
 )
 from src.intrastructure.repositories import CarrierRepository
@@ -335,3 +341,123 @@ class GetGeoGroupDetailUseCase:
         if service is None or service.carrier_id != carrier_id or group.carrier_service_id != service.id:
             return None
         return group
+
+
+class SetCarrierServiceTariffsUseCase:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._repo = CarrierRepository(session)
+
+    async def execute(self, cmd: SetCarrierServiceTariffsCommand, operator: str) -> CarrierServiceTariffSnapshot:
+        if not cmd.rows:
+            raise ValueError("tariff rows are required")
+        async with self._session.begin():
+            service = await self._repo.get_service_by_id(cmd.service_id)
+            if service is None or service.carrier_id != cmd.carrier_id:
+                raise CarrierServiceNotFoundError("carrier service not found")
+            carrier = await self._repo.get_carrier_by_id(cmd.carrier_id)
+            if carrier is None:
+                raise CarrierNotFoundError("carrier not found")
+
+            group = await self._repo.get_geo_group_by_id(cmd.geo_group_id, with_regions=True)
+            if group is None or group.carrier_service_id != cmd.service_id:
+                raise CarrierServiceGeoGroupNotFoundError("geo group not found")
+
+            region_codes = [region.region_code for region in group.regions]
+            if not region_codes:
+                raise RegionNotFoundError("geo group has no regions")
+
+            region_code_set = set(region_codes)
+            for row in cmd.rows:
+                if row.region_code not in region_code_set:
+                    raise CarrierServiceTariffRegionMismatchError("region not in geo group")
+
+            tariffs = [
+                CarrierServiceTariff(
+                    carrier_service_id=cmd.service_id,
+                    region_code=row.region_code,
+                    weight_max_kg=row.weight_max_kg,
+                    volume_max_cm3=row.volume_max_cm3,
+                    girth_max_cm=row.girth_max_cm,
+                    currency=cmd.currency,
+                    price_amount=row.price_amount,
+                    created_by=operator,
+                )
+                for row in cmd.rows
+            ]
+            await self._repo.replace_tariffs(cmd.service_id, region_codes, tariffs)
+
+            regions = await self._repo.fetch_regions_by_codes(region_codes)
+            region_name_map = {region.region_code: region.name for region in regions}
+
+            payload = _build_tariff_snapshot_payload(
+                region_codes,
+                region_name_map,
+                cmd.currency,
+                list(cmd.rows),
+            )
+            version = await self._repo.get_latest_tariff_snapshot_version(cmd.carrier_id, cmd.service_id) + 1
+            snapshot = CarrierServiceTariffSnapshot(
+                carrier_id=cmd.carrier_id,
+                service_id=cmd.service_id,
+                carrier_code=carrier.carrier_code,
+                service_code=service.service_code,
+                effective_from=cmd.effective_from,
+                effective_to=cmd.effective_to,
+                payload=payload,
+                status=CarrierServiceTariffSnapshotStatus.ACTIVE.value,
+                version=version,
+                created_by=operator,
+            )
+            await self._repo.add_tariff_snapshot(snapshot)
+        logger.info(
+            "carrier service tariffs updated",
+            service_id=cmd.service_id,
+            geo_group_id=cmd.geo_group_id,
+            snapshot_id=snapshot.id,
+        )
+        return snapshot
+
+
+def _build_tariff_snapshot_payload(
+    region_codes: list[str],
+    region_name_map: dict[str, str],
+    currency: str,
+    rows: list[CarrierServiceTariffRowInput],
+) -> dict[str, object]:
+    girth_max_values = sorted({row.girth_max_cm for row in rows if row.girth_max_cm is not None})
+    weight_max_values = sorted({row.weight_max_kg for row in rows if row.weight_max_kg is not None})
+    volume_max_values = sorted({row.volume_max_cm3 for row in rows if row.volume_max_cm3 is not None})
+
+    region_axis = [
+        {"code": code, "name": region_name_map.get(code, "")}
+        for code in region_codes
+    ]
+    metric_axis: dict[str, list[object]] = {}
+    if weight_max_values:
+        metric_axis["weight_max_kg"] = weight_max_values
+    if volume_max_values:
+        metric_axis["volume_max_cm3"] = volume_max_values
+    if girth_max_values:
+        metric_axis["girth_max_cm"] = girth_max_values
+
+    matrix: list[dict[str, object]] = []
+    for code in region_codes:
+        region_rows = [
+            {
+                "weight_max_kg": row.weight_max_kg,
+                "volume_max_cm3": row.volume_max_cm3,
+                "girth_max_cm": row.girth_max_cm,
+                "price_amount": row.price_amount,
+            }
+            for row in rows
+            if row.region_code == code
+        ]
+        matrix.append({"region_code": code, "rows": region_rows})
+
+    return {
+        "currency": currency,
+        "geo_axis": region_axis,
+        "metric_axis": metric_axis,
+        "matrix": matrix,
+    }

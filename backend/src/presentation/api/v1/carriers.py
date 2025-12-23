@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.application.carrier.commands import (
     AssignGeoGroupRegionsCommand,
+    CarrierServiceTariffRowInput,
     CreateCarrierCommand,
     CreateCarrierServiceCommand,
     CreateGeoGroupCommand,
     QueryCarriersCommand,
     QueryCarrierServicesCommand,
+    SetCarrierServiceTariffsCommand,
     UpdateCarrierCommand,
     UpdateCarrierServiceCommand,
     UpdateGeoGroupCommand,
@@ -20,6 +22,7 @@ from src.application.carrier.exceptions import (
     CarrierServiceGeoGroupConflictError,
     CarrierServiceGeoGroupNotFoundError,
     CarrierServiceNotFoundError,
+    CarrierServiceTariffRegionMismatchError,
     RegionNotFoundError,
 )
 from src.application.carrier.use_cases import (
@@ -33,6 +36,7 @@ from src.application.carrier.use_cases import (
     ListGeoGroupsUseCase,
     QueryCarrierServicesUseCase,
     QueryCarriersUseCase,
+    SetCarrierServiceTariffsUseCase,
     UpdateCarrierServiceUseCase,
     UpdateCarrierUseCase,
     UpdateGeoGroupUseCase,
@@ -50,6 +54,7 @@ from src.presentation.dependencies.carrier import (
     get_list_geo_groups_use_case,
     get_query_carrier_services_use_case,
     get_query_carriers_use_case,
+    get_set_carrier_service_tariffs_use_case,
     get_update_carrier_service_use_case,
     get_update_carrier_use_case,
     get_update_geo_group_use_case,
@@ -61,6 +66,8 @@ from src.presentation.schema.carrier import (
     CarrierServiceCreateSchema,
     CarrierServiceListResponse,
     CarrierServiceSchema,
+    CarrierServiceTariffSnapshotSchema,
+    CarrierServiceTariffUpsertSchema,
     CarrierServiceUpdateSchema,
     CarrierUpdateSchema,
     GeoGroupCreateSchema,
@@ -208,6 +215,49 @@ async def update_carrier_service(
     if service is None:
         raise AppError(message="Carrier service not found", code=status.HTTP_404_NOT_FOUND)
     return SuccessResponse(data=CarrierServiceSchema.from_model(service))
+
+
+@router.post(
+    "/{carrier_id}/services/{service_id}/tariffs",
+    response_model=SuccessResponse[CarrierServiceTariffSnapshotSchema],
+    status_code=status.HTTP_201_CREATED,
+)
+async def upsert_carrier_service_tariffs(
+    carrier_id: int,
+    service_id: int,
+    payload: CarrierServiceTariffUpsertSchema,
+    current_user: CurrentUser = Depends(get_current_user),
+    use_case: SetCarrierServiceTariffsUseCase = Depends(get_set_carrier_service_tariffs_use_case),
+) -> SuccessResponse[CarrierServiceTariffSnapshotSchema]:
+    cmd = SetCarrierServiceTariffsCommand(
+        carrier_id=carrier_id,
+        service_id=service_id,
+        geo_group_id=payload.geo_group_id,
+        currency=payload.currency,
+        effective_from=payload.effective_from,
+        effective_to=payload.effective_to,
+        rows=[
+            CarrierServiceTariffRowInput(
+                region_code=row.region_code,
+                weight_max_kg=row.weight_max_kg,
+                volume_max_cm3=row.volume_max_cm3,
+                girth_max_cm=row.girth_max_cm,
+                price_amount=row.price_amount,
+            )
+            for row in payload.rows
+        ],
+    )
+    try:
+        snapshot = await use_case.execute(cmd, operator=current_user.user_id)
+    except CarrierServiceNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
+    except CarrierServiceGeoGroupNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_404_NOT_FOUND) from exc
+    except RegionNotFoundError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
+    except CarrierServiceTariffRegionMismatchError as exc:
+        raise AppError(message=str(exc), code=status.HTTP_400_BAD_REQUEST) from exc
+    return SuccessResponse(data=CarrierServiceTariffSnapshotSchema.from_model(snapshot))
 
 
 @router.get(

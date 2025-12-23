@@ -15,6 +15,8 @@ from src.intrastructure.database.models import (
     CarrierServiceStatus,
     CarrierStatus,
     Region,
+    CarrierServiceTariff,
+    CarrierServiceTariffSnapshot,
 )
 
 
@@ -191,3 +193,35 @@ class CarrierRepository:
         stmt = select(Region).where(Region.region_code.in_(codes), Region.is_deleted.is_(False))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    # ------------------------------------------------------------------ Tariffs
+    async def replace_tariffs(
+        self,
+        service_id: int,
+        region_codes: list[str],
+        tariffs: Iterable[CarrierServiceTariff],
+    ) -> list[CarrierServiceTariff]:
+        if region_codes:
+            await self._session.execute(
+                delete(CarrierServiceTariff).where(
+                    CarrierServiceTariff.carrier_service_id == service_id,
+                    CarrierServiceTariff.region_code.in_(region_codes),
+                )
+            )
+        self._session.add_all(list(tariffs))
+        await self._session.flush()
+        return list(tariffs)
+
+    async def get_latest_tariff_snapshot_version(self, carrier_id: int, service_id: int) -> int:
+        stmt = select(func.max(CarrierServiceTariffSnapshot.version)).where(
+            CarrierServiceTariffSnapshot.carrier_id == carrier_id,
+            CarrierServiceTariffSnapshot.service_id == service_id,
+        )
+        result = await self._session.execute(stmt)
+        latest = result.scalar_one()
+        return int(latest or 0)
+
+    async def add_tariff_snapshot(self, snapshot: CarrierServiceTariffSnapshot) -> CarrierServiceTariffSnapshot:
+        self._session.add(snapshot)
+        await self._session.flush()
+        return snapshot

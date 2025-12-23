@@ -41,6 +41,11 @@ class CarrierServiceGeoGroupStatus(str, Enum):
     SCHEDULED = "SCHEDULED"
 
 
+class CarrierServiceTariffSnapshotStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
 class Carrier(AuditMixin, Base):
     """Transport carrier definition."""
 
@@ -189,3 +194,86 @@ class CarrierServiceGeoGroupRegion(AuditMixin, Base):
 
     group: Mapped[CarrierServiceGeoGroup] = relationship(back_populates="regions")
     region: Mapped[Region] = relationship()
+
+
+class CarrierServiceTariff(AuditMixin, Base):
+    """承运商服务多维度运费矩阵."""
+
+    __tablename__ = "carrier_service_tariffs"
+    __table_args__ = (
+        UniqueConstraint(
+            "carrier_service_id",
+            "region_code",
+            "weight_max_kg",
+            "volume_max_cm3",
+            "girth_max_cm",
+            name="uq_carrier_tariff_dimension",
+        ),
+        Index("idx_carrier_tariff_region", "region_code"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键")
+    carrier_service_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("carrier_services.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="关联承运商服务",
+    )
+    region_code: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("regions.region_code"),
+        nullable=False,
+        comment="目的地区域编码",
+    )
+    weight_max_kg: Mapped[float | None] = mapped_column(comment="重量上限(kg)")
+    volume_max_cm3: Mapped[int | None] = mapped_column(comment="体积上限(cm^3)")
+    girth_max_cm: Mapped[int | None] = mapped_column(comment="三边合计上限(cm)")
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="JPY", server_default="JPY", comment="币种")
+    price_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="价格(最小货币单位)")
+
+    carrier_service: Mapped[CarrierService] = relationship()
+    region: Mapped[Region] = relationship()
+
+
+class CarrierServiceTariffSnapshot(AuditMixin, Base):
+    """承运商服务运费快照（业务查询只读）."""
+
+    __tablename__ = "carrier_service_tariff_snapshots"
+    __table_args__ = (
+        UniqueConstraint("carrier_id", "service_id", "version", name="uq_carrier_tariff_snapshot_version"),
+        Index("idx_carrier_tariff_snapshot_service", "carrier_id", "service_id"),
+        Index("idx_carrier_tariff_snapshot_effective", "effective_from"),
+        Index(
+            "idx_carrier_tariff_snapshot_lookup",
+            "carrier_code",
+            "service_code",
+            "effective_from",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True, comment="主键")
+    version: Mapped[int] = mapped_column(SmallInteger, nullable=False, comment="版本号")
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="生效时间")
+    effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="失效时间")
+    carrier_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("carriers.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="承运商ID",
+    )
+    service_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("carrier_services.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="运输服务ID",
+    )
+    carrier_code: Mapped[str] = mapped_column(String(64), nullable=False, comment="承运商编码")
+    service_code: Mapped[str] = mapped_column(String(64), nullable=False, comment="运输服务编码")
+    payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False, comment="运费二维矩阵结构")
+    status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default=CarrierServiceTariffSnapshotStatus.ACTIVE,
+        server_default=CarrierServiceTariffSnapshotStatus.ACTIVE.value,
+        comment="快照状态",
+    )
