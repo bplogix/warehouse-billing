@@ -188,6 +188,7 @@ const GeoPage = () => {
             <Label htmlFor="geo-group-name">区域名称</Label>
             <Input
               id="geo-group-name"
+              name="geoGroupName"
               value={regionName}
               onChange={(event) => setRegionName(event.target.value)}
               placeholder="例：关东区域"
@@ -196,6 +197,7 @@ const GeoPage = () => {
           <div className="space-y-2">
             <Label htmlFor="carrier-select">承运商</Label>
             <Select
+              name="geoCarrierId"
               value={selectedCarrierId ? String(selectedCarrierId) : ''}
               onValueChange={(value) => setSelectedCarrierId(Number(value))}
               disabled={loadingCarriers}
@@ -222,6 +224,7 @@ const GeoPage = () => {
         <div className="space-y-2">
           <Label htmlFor="service-select">承运商服务</Label>
           <Select
+            name="geoServiceId"
             value={selectedServiceId ? String(selectedServiceId) : ''}
             onValueChange={(value) => setSelectedServiceId(Number(value))}
             disabled={servicesLoading || serviceOptions.length === 0}
@@ -249,7 +252,7 @@ const GeoPage = () => {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <Label className="text-sm font-medium">都道府县</Label>
+              <p className="text-sm font-medium">都道府县</p>
               <p className="text-xs text-muted-foreground">
                 仅显示日本 {PREFECTURE_LEVEL} 级别区域
               </p>
@@ -299,6 +302,7 @@ const GeoPage = () => {
                     <div key={region.regionCode} className="flex items-center">
                       <Checkbox
                         id={checkboxId}
+                        name={checkboxId}
                         checked={selectedRegionCodes.includes(region.regionCode)}
                         onCheckedChange={() => toggleRegion(region.regionCode)}
                       />

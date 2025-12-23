@@ -69,6 +69,8 @@ const CarrierList = ({
         </div>
       </div>
       <Input
+        id="carrier-search"
+        name="carrier-search"
         placeholder="搜索名称 / 编码 / 国家"
         value={keyword}
         onChange={(event) => setKeyword(event.target.value)}

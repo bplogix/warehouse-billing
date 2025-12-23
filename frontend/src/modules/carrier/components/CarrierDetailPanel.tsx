@@ -160,20 +160,20 @@ const CarrierDetailPanel = ({ carrier, onSubmit }: Props) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>状态</FormLabel>
-                <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="请选择状态" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
+                  </FormControl>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormItem>
             )}
           />

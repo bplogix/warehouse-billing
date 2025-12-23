@@ -209,6 +209,8 @@ const BillingOverview = () => {
               </CardDescription>
             </div>
             <Input
+              id="billing-coverage-search"
+              name="billingCoverageSearch"
               placeholder="搜索仓网或区域"
               className="w-48"
               aria-label="搜索仓网"

@@ -418,6 +418,8 @@ const BillingModule = () => {
               </div>
               <div className="border-b px-3 py-2 md:border-b-0">
                 <Input
+                  id="billing-customer-search"
+                  name="billingCustomerSearch"
                   value={customerKeyword}
                   onChange={(event) => setCustomerKeyword(event.target.value)}
                   placeholder="搜索客户名称或编码"

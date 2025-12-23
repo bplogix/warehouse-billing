@@ -58,6 +58,8 @@ const CustomerPage = () => {
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Input
+            id="customer-search"
+            name="customerSearch"
             placeholder="搜索客户名称 / 编码 / 联系人"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}

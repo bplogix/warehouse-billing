@@ -534,6 +534,8 @@ const TemplateForm = ({
                                 className="grid gap-2 md:grid-cols-4"
                               >
                                 <Input
+                                  id={`rule-${index}-tier-${tierIndex}-min`}
+                                  name={`rules.${index}.tiers.${tierIndex}.minValue`}
                                   type="number"
                                   placeholder="最小值"
                                   value={displayMinValue}
@@ -549,6 +551,8 @@ const TemplateForm = ({
                                   }}
                                 />
                                 <Input
+                                  id={`rule-${index}-tier-${tierIndex}-max`}
+                                  name={`rules.${index}.tiers.${tierIndex}.maxValue`}
                                   type="number"
                                   placeholder="最大值"
                                   value={tier.maxValue ?? ''}
@@ -566,6 +570,8 @@ const TemplateForm = ({
                                   }}
                                 />
                                 <Input
+                                  id={`rule-${index}-tier-${tierIndex}-price`}
+                                  name={`rules.${index}.tiers.${tierIndex}.price`}
                                   type="number"
                                   placeholder="单价"
                                   min={0}

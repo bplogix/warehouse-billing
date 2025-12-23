@@ -233,6 +233,8 @@ const CustomerQuotes = () => {
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row">
             <Input
+              id="customer-quotes-search"
+              name="customerQuotesSearch"
               value={keyword}
               placeholder="输入客户名称或编码"
               onChange={(event) => setKeyword(event.target.value)}

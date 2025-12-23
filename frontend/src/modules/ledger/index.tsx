@@ -153,6 +153,8 @@ const LedgerModule = () => {
           </p>
         </div>
         <Input
+          id="ledger-customer"
+          name="ledgerCustomer"
           list="customer-options"
           placeholder="请选择客户"
           value={customerId === '' ? '' : String(customerId)}

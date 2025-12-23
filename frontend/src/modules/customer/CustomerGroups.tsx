@@ -160,11 +160,15 @@ const CustomerGroups = () => {
           </DialogHeader>
           <div className="space-y-3">
             <Input
+              id="customer-group-name"
+              name="customerGroupName"
               placeholder="分组名称"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             <Input
+              id="customer-group-description"
+              name="customerGroupDescription"
               placeholder="分组描述（可选）"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -190,6 +194,8 @@ const CustomerGroups = () => {
           </DialogHeader>
           <div className="space-y-3">
             <Input
+              id="customer-group-search"
+              name="customerGroupSearch"
               placeholder="搜索客户名称 / 编码"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
