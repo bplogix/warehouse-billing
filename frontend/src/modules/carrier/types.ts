@@ -117,9 +117,19 @@ export type GeoGroup = {
   groupName: string
   status: CarrierServiceGeoGroupStatus
   description?: string | null
-  effectiveDate?: string | null
-  expireDate?: string | null
   regions?: GeoGroupRegion[]
+}
+
+export type GeoGroupListResponse = {
+  total: number
+  items: GeoGroup[]
+}
+
+export type GeoGroupQuery = {
+  keyword?: string | null
+  status?: CarrierServiceGeoGroupStatus | null
+  limit?: number
+  offset?: number
 }
 
 export type GeoGroupCreatePayload = {
@@ -127,8 +137,13 @@ export type GeoGroupCreatePayload = {
   groupName: string
   status?: CarrierServiceGeoGroupStatus
   description?: string | null
-  effectiveDate?: string | null
-  expireDate?: string | null
+  attributes?: Record<string, unknown> | null
+}
+
+export type GeoGroupUpdatePayload = {
+  groupName?: string
+  status?: CarrierServiceGeoGroupStatus
+  description?: string | null
   attributes?: Record<string, unknown> | null
 }
 
@@ -157,4 +172,20 @@ export type RegionQuery = {
   keyword?: string | null
   limit?: number
   offset?: number
+}
+
+export type TariffRowPayload = {
+  regionCode: string
+  weightMaxKg?: number | null
+  volumeMaxCm3?: number | null
+  girthMaxCm?: number | null
+  priceAmount: number
+}
+
+export type TariffCreatePayload = {
+  geoGroupId: number
+  currency?: string
+  effectiveFrom?: string | null
+  effectiveTo?: string | null
+  rows: TariffRowPayload[]
 }

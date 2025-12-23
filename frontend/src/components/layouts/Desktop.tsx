@@ -115,9 +115,14 @@ const subNavConfig: Record<
       path: '/carriers/carrier',
     },
     {
-      label: '地理区域',
-      description: '配置承运商服务的覆盖区域',
+      label: '运价覆盖',
+      description: '维护服务覆盖区域与都道府县',
       path: '/carriers/geo',
+    },
+    {
+      label: '运费定价',
+      description: '按区域维护尺寸与重量计价',
+      path: '/carriers/tariffs',
     },
   ],
 }

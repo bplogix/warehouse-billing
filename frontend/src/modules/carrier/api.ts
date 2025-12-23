@@ -10,12 +10,16 @@ import type {
   CarrierServiceListResponse,
   CarrierServiceQuery,
   CarrierServiceUpdatePayload,
+  GeoGroupListResponse,
+  GeoGroupQuery,
+  GeoGroupUpdatePayload,
   CarrierUpdatePayload,
   GeoGroup,
   GeoGroupCreatePayload,
   GeoGroupRegionUpdatePayload,
   RegionListResponse,
   RegionQuery,
+  TariffCreatePayload,
 } from './types'
 
 export const fetchCarriers = (query?: CarrierQuery) =>
@@ -68,6 +72,27 @@ export const createGeoGroup = (
     payload,
   )
 
+export const fetchGeoGroups = (
+  carrierId: number,
+  serviceId: number,
+  query?: GeoGroupQuery,
+) =>
+  apiGet<GeoGroupListResponse>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups`,
+    { params: query },
+  )
+
+export const updateGeoGroup = (
+  carrierId: number,
+  serviceId: number,
+  groupId: number,
+  payload: GeoGroupUpdatePayload,
+) =>
+  apiPut<GeoGroup>(
+    `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups/${groupId}`,
+    payload,
+  )
+
 export const assignGeoGroupRegions = (
   carrierId: number,
   serviceId: number,
@@ -76,5 +101,15 @@ export const assignGeoGroupRegions = (
 ) =>
   apiPut<GeoGroup>(
     `/v1/carriers/${carrierId}/services/${serviceId}/geo-groups/${groupId}/regions`,
+    payload,
+  )
+
+export const createTariffs = (
+  carrierId: number,
+  serviceId: number,
+  payload: TariffCreatePayload,
+) =>
+  apiPost(
+    `/v1/carriers/${carrierId}/services/${serviceId}/tariffs`,
     payload,
   )
